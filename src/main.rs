@@ -1,11 +1,13 @@
-extern crate piston;
-extern crate graphics;
 extern crate glutin_window;
+extern crate graphics;
 extern crate opengl_graphics;
+extern crate piston;
 
-pub mod ecs;
+//pub mod ecs;
 pub mod event_handler;
 pub mod level;
+pub mod player;
+pub mod random_mob;
 
 use piston::window::WindowSettings;
 use piston::event_loop::*;
@@ -18,12 +20,10 @@ use level::Level;
 
 pub const WINDOW_TITLE: &'static str = "Station 13";
 pub const WINDOW_DIMS: [u32; 2] = [800, 600];
-pub const MOVE_SPEED: f64 = 500.0;
 
 pub struct Game {
     gl: GlGraphics,
     level: Level,
-    pos: (f64, f64),
 }
 
 impl Game {
@@ -31,44 +31,15 @@ impl Game {
         Game {
             gl,
             level: Level::new(),
-            pos: (0.0, 0.0),
         }
+    }
+
+    pub fn tick(&mut self, args: &UpdateArgs, event_handler: &EventHandler) {
+        self.level.tick(args, event_handler);
     }
 
     pub fn render(&mut self, args: &RenderArgs) {
-        use graphics::*;
-
-        const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
-        const RED:   [f32; 4] = [1.0, 0.0, 0.0, 1.0];
-
-        let square = rectangle::square(0.0, 0.0, 50.0);
-        let pos = self.pos;
-        let (x, y) = ((args.width / 2) as f64, (args.height / 2) as f64);
-
-        self.gl.draw(args.viewport(), |c, gl| {
-            clear(GREEN, gl);
-
-            let transform = c.transform.trans(x, y)
-                .trans(-pos.0, -pos.1);
-
-            rectangle(RED, square, transform, gl);
-        });
-    }
-
-    fn tick(&mut self, args: &UpdateArgs, event_handler: &EventHandler) {
-        let ms_dt = MOVE_SPEED * args.dt;
-        if event_handler.is_key_down(Key::W) {
-            self.pos.1 += ms_dt;
-        }
-        if event_handler.is_key_down(Key::S) {
-            self.pos.1 -= ms_dt;
-        }
-        if event_handler.is_key_down(Key::A) {
-            self.pos.0 += ms_dt;
-        }
-        if event_handler.is_key_down(Key::D) {
-            self.pos.0 -= ms_dt;
-        }
+        self.level.render(&mut self.gl, args);
     }
 }
 

@@ -1,4 +1,6 @@
 **/*.rs.bk
+*.html
+*.md
 .idea
 /target
 Cargo.lock
