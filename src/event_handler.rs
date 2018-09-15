@@ -42,7 +42,7 @@ impl EventHandler {
                 Keyboard(k) => {
                     pressed_keys.remove(&k.code());
                 },
-                Mouse(m) => (),
+                Mouse(_) => (),
                 _ => (),
             }
         }

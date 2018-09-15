@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
-use graphics::Context;
-use opengl_graphics::GlGraphics;
 use piston::input::*;
 
+use components::{PositionComponent, RenderComponent};
+use level::{Components, Entity, Level};
 use event_handler::EventHandler;
 
 pub const MOVE_SPEED: f64 = 500.0;
+pub const COLOR: [f32; 4] = [0.7, 0.3, 0.3, 1.0];  // Red
+pub const SIZE: f64 = 50.0;
 
 #[derive(PartialEq, Eq, Hash)]
 pub enum Intent {
@@ -30,44 +32,50 @@ impl ControlScheme {
     }
 }
 
-pub struct Player {
-    pos: (f64, f64),
+pub struct PlayerComponent {
     control_scheme: ControlScheme,
 }
 
-impl Player {
-    pub fn new(control_scheme: ControlScheme) -> Self {
-        Self {
-            pos: (0.0, 0.0),
-            control_scheme,
-        }
-    }
+pub fn new(control_scheme: ControlScheme, level: &mut Level) -> Entity {
+    let result = level.create_entity();
+    level.components.positions.set(&result, PositionComponent { x: 0.0, y: 0.0 });
+    level.components.players.set(&result, PlayerComponent { control_scheme });
+    level.components.renderables.set(&result, RenderComponent {
+        color: COLOR,
+        size: SIZE,
+    });
+    result
+}
 
-    pub fn tick(&mut self, args: &UpdateArgs, event_handler: &EventHandler) {
+pub struct PlayerUpdateSystem;
+
+impl PlayerUpdateSystem {
+    pub fn run(&self, event_handler: &EventHandler, args: &UpdateArgs,
+               components: &mut Components, entities: &Vec<Entity>) {
         use self::Intent::*;
 
-        let ms_dt = MOVE_SPEED * args.dt;
-        if self.control_scheme.intends(Up, event_handler) {
-            self.pos.1 += ms_dt;
-        }
-        if self.control_scheme.intends(Down, event_handler) {
-            self.pos.1 -= ms_dt;
-        }
-        if self.control_scheme.intends(Left, event_handler) {
-            self.pos.0 += ms_dt;
-        }
-        if self.control_scheme.intends(Right, event_handler) {
-            self.pos.0 -= ms_dt;
-        }
-    }
+        let filtered_entities: Vec<&Entity> = entities.iter()
+            .filter(|e| {
+                components.players.get(e).is_some() &&
+                    components.positions.get(e).is_some()
+            }).collect();
 
-    pub fn render(&mut self, gl: &mut GlGraphics, c: Context, args: &RenderArgs) {
-        use graphics::*;
-        const RED: [f32; 4] = [0.7, 0.3, 0.3, 1.0];
-        let (x, y) = ((args.width / 2) as f64, (args.height / 2) as f64);
-        let square = rectangle::square(0.0, 0.0, 50.0);
-        let transform = c.transform.trans(x, y)
-            .trans(-self.pos.0, -self.pos.1);
-        rectangle(RED, square, transform, gl);
+        for entity in filtered_entities.iter() {
+            let player_comp = components.players.get(entity).unwrap();
+            let pos_comp = components.positions.get_mut(entity).unwrap();
+            let ms_dt = MOVE_SPEED * args.dt;
+            if player_comp.control_scheme.intends(Up, event_handler) {
+                pos_comp.y += ms_dt;
+            }
+            if player_comp.control_scheme.intends(Down, event_handler) {
+                pos_comp.y -= ms_dt;
+            }
+            if player_comp.control_scheme.intends(Left, event_handler) {
+                pos_comp.x += ms_dt;
+            }
+            if player_comp.control_scheme.intends(Right, event_handler) {
+                pos_comp.x -= ms_dt;
+            }
+        }
     }
 }

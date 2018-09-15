@@ -4,10 +4,13 @@ extern crate opengl_graphics;
 extern crate piston;
 
 //pub mod ecs;
+pub mod alloc;
+pub mod components;
 pub mod event_handler;
 pub mod level;
 pub mod player;
 pub mod random_mob;
+pub mod systems;
 
 use piston::window::WindowSettings;
 use piston::event_loop::*;
