@@ -5,7 +5,7 @@ use self::rand::{thread_rng, Rng};
 use piston::input::*;
 
 use components::{PositionComponent, RenderComponent};
-use level::{Components, Entity, Level};
+use level::{ComponentMap, Entity, Level};
 
 pub const MOVE_SPEED: f64 = 500.0;
 const CHANGE_INTERVAL: u32 = 60;
@@ -26,9 +26,17 @@ pub struct RandomMobComponent {
 
 pub fn new(level: &mut Level) -> Entity {
     let result = level.create_entity();
+    /*
     level.components.positions.set(&result, PositionComponent { x: 0.0, y: 0.0 });
     level.components.randos.set(&result, RandomMobComponent { change_cnt: 0, curr_dir: Dir::Up });
     level.components.renderables.set(&result, RenderComponent {
+        color: COLOR,
+        size: SIZE,
+    });
+    */
+    level.components.set(&result, PositionComponent { x: 0.0, y: 0.0 });
+    level.components.set(&result, RandomMobComponent { change_cnt: 0, curr_dir: Dir::Up });
+    level.components.set(&result, RenderComponent {
         color: COLOR,
         size: SIZE,
     });
@@ -38,16 +46,16 @@ pub fn new(level: &mut Level) -> Entity {
 pub struct RandomMobUpdateSystem;
 
 impl RandomMobUpdateSystem {
-    pub fn run(&self, args: &UpdateArgs, components: &mut Components, entities: &Vec<Entity>) {
+    pub fn run(&self, args: &UpdateArgs, components: &mut ComponentMap, entities: &Vec<Entity>) {
         let filtered_entities: Vec<&Entity> = entities.iter()
             .filter(|e| {
-                components.randos.get(e).is_some() &&
-                    components.positions.get(e).is_some()
+                components.borrow::<RandomMobComponent>(e).is_some() &&
+                    components.borrow::<PositionComponent>(e).is_some()
             }).collect();
 
         for entity in filtered_entities {
-            let rando_comp = components.randos.get_mut(entity).unwrap();
-            let pos_comp = components.positions.get_mut(entity).unwrap();
+            let rando_comp = components.borrow_mut::<RandomMobComponent>(entity).unwrap();
+            let pos_comp = components.borrow_mut::<PositionComponent>(entity).unwrap();
 
             if rando_comp.change_cnt == 0 {
                 let mut rng = thread_rng();

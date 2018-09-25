@@ -1,3 +1,6 @@
+use std::any::{Any, TypeId};
+use std::collections::HashMap;
+
 use opengl_graphics::GlGraphics;
 use piston::input::{Key, RenderArgs, UpdateArgs};
 
@@ -16,6 +19,65 @@ pub const LEVEL_HEIGHT: usize = 32;
 pub type Entity = GenerationalIndex;
 pub type EntityMap<T> = GenerationalIndexArray<T>;
 
+// Here we have to extend `Any`, because otherwise we need to specify a static lifetime bound to
+// functions generic on `Component`.
+//
+// TODO: Why the fuck do we need to do that?
+// Is `Any` implied to have a static lifetime?
+pub trait Component: Any {}
+impl<T: Any> Component for T {}
+
+// TODO: Replace all `GenerationalIndexArray` occurrences with `EntityMap`.
+pub struct ComponentMap {
+    // TODO: Does it need to be `Any`, or could we do something along the lines of
+    // `Box<EntityMap<Any>>`?
+    data: HashMap<TypeId, Box<Any>>,
+}
+
+impl ComponentMap {
+    pub fn new() -> Self {
+        Self { data: HashMap::new() }
+    }
+
+    pub fn get<C: Component + Clone>(&self, entity: &mut Entity) -> Option<C> {
+        self.borrow::<C>(entity).map(|c| c.clone())
+    }
+
+    pub fn borrow<C: Component>(&self, entity: &Entity) -> Option<&C> {
+        self.entity_map::<C>().borrow(entity)
+    }
+
+    pub fn borrow_mut<C: Component>(&mut self, entity: &Entity) -> Option<&mut C> {
+        self.entity_map_mut::<C>().borrow_mut(entity)
+    }
+
+    pub fn set<C: Component>(&mut self, entity: &Entity, comp: C) {
+        self.entity_map_mut::<C>().set(entity, comp);
+    }
+
+    pub fn add_comp_type<C: Component>(&mut self) {
+        let type_id = TypeId::of::<C>();
+        if self.data.contains_key(&type_id) {
+            // TODO: Is there a macro to grab the name of the struct we're impling?
+            panic!("ComponentMap already contains {:?}", type_id);
+        }
+        self.data.insert(type_id, Box::new(GenerationalIndexArray::<C>(Vec::new())));
+    }
+
+    fn entity_map<C: Component>(&self) -> &GenerationalIndexArray<C> {
+        self.data.get(&TypeId::of::<C>())
+            .map(|gia| gia.downcast_ref().unwrap())
+            .unwrap()
+    }
+
+    fn entity_map_mut<C: Component>(&mut self) -> &mut GenerationalIndexArray<C> {
+        self.data.get_mut(&TypeId::of::<C>())
+            .map(|gia| gia.downcast_mut().unwrap())
+            .unwrap()
+    }
+}
+
+/*
 pub struct Components {
     pub positions: EntityMap<PositionComponent>,
     pub players: EntityMap<PlayerComponent>,
@@ -26,6 +88,7 @@ pub struct Components {
 impl Components {
     pub fn new() -> Self {
         Self {
+            // TODO: Don't make the client pass in a vec.
             positions: GenerationalIndexArray(Vec::new()),
             players: GenerationalIndexArray(Vec::new()),
             randos: GenerationalIndexArray(Vec::new()),
@@ -33,12 +96,14 @@ impl Components {
         }
     }
 }
+*/
 
 pub struct Level {
     // Entities
     entities: Vec<Entity>,
     // Components
-    pub components: Components,
+    //pub components: Components,
+    pub components: ComponentMap,
     // Systems
     player_update_system: PlayerUpdateSystem,
     rando_update_system: RandomMobUpdateSystem,
@@ -51,7 +116,8 @@ impl Level {
     pub fn new() -> Self {
         let mut result = Self {
             entities: Vec::new(),
-            components: Components::new(),
+            //components: Components::new(),
+            components: ComponentMap::new(),
             player_update_system: PlayerUpdateSystem {},
             rando_update_system: RandomMobUpdateSystem {},
             render_system: RenderSystem {},
@@ -94,6 +160,12 @@ impl Level {
     }
 
     pub fn tick(&mut self, args: &UpdateArgs, event_handler: &EventHandler) {
+        /*
+        {
+            let comp_filter = self.player_update_system.comp_filter(&self.components);
+            let filtered_entities: Vec<&Entity> = self.entities.iter().filter(comp_filter).collect();
+        }
+        */
         self.player_update_system.run(event_handler, args, &mut self.components, &self.entities);
         self.rando_update_system.run(args, &mut self.components, &self.entities);
     }

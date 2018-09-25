@@ -90,7 +90,7 @@ impl<T> GenerationalIndexArray<T> {
         true
     }
 
-    pub fn get(&self, gen_idx: &GenerationalIndex) -> Option<&T> {
+    pub fn borrow(&self, gen_idx: &GenerationalIndex) -> Option<&T> {
         // TODO: Dedup this and `get_mut`.
         if !self.check_idx(gen_idx) {
             return None;
@@ -104,7 +104,7 @@ impl<T> GenerationalIndexArray<T> {
         }
     }
 
-    pub fn get_mut(&mut self, gen_idx: &GenerationalIndex) -> Option<&mut T> {
+    pub fn borrow_mut(&mut self, gen_idx: &GenerationalIndex) -> Option<&mut T> {
         if !self.check_idx(gen_idx) {
             return None;
         }

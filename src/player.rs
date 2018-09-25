@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use piston::input::*;
 
 use components::{PositionComponent, RenderComponent};
-use level::{Components, Entity, Level};
+use level::{ComponentMap, Entity, Level};
 use event_handler::EventHandler;
 
 pub const MOVE_SPEED: f64 = 500.0;
@@ -38,9 +38,17 @@ pub struct PlayerComponent {
 
 pub fn new(control_scheme: ControlScheme, level: &mut Level) -> Entity {
     let result = level.create_entity();
+    /*
     level.components.positions.set(&result, PositionComponent { x: 0.0, y: 0.0 });
     level.components.players.set(&result, PlayerComponent { control_scheme });
     level.components.renderables.set(&result, RenderComponent {
+        color: COLOR,
+        size: SIZE,
+    });
+    */
+    level.components.set(&result, PositionComponent { x: 0.0, y: 0.0 });
+    level.components.set(&result, PlayerComponent { control_scheme });
+    level.components.set(&result, RenderComponent {
         color: COLOR,
         size: SIZE,
     });
@@ -51,18 +59,18 @@ pub struct PlayerUpdateSystem;
 
 impl PlayerUpdateSystem {
     pub fn run(&self, event_handler: &EventHandler, args: &UpdateArgs,
-               components: &mut Components, entities: &Vec<Entity>) {
+               components: &mut ComponentMap, entities: &Vec<Entity>) {
         use self::Intent::*;
 
         let filtered_entities: Vec<&Entity> = entities.iter()
             .filter(|e| {
-                components.players.get(e).is_some() &&
-                    components.positions.get(e).is_some()
+                components.borrow::<PlayerComponent>(e).is_some() &&
+                    components.borrow::<PositionComponent>(e).is_some()
             }).collect();
 
         for entity in filtered_entities.iter() {
-            let player_comp = components.players.get(entity).unwrap();
-            let pos_comp = components.positions.get_mut(entity).unwrap();
+            let player_comp = components.borrow::<PlayerComponent>(entity).unwrap();
+            let pos_comp = components.borrow_mut::<PositionComponent>(entity).unwrap();
             let ms_dt = MOVE_SPEED * args.dt;
             if player_comp.control_scheme.intends(Up, event_handler) {
                 pos_comp.y += ms_dt;
