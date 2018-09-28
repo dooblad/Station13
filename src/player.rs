@@ -64,13 +64,13 @@ impl PlayerUpdateSystem {
 
         let filtered_entities: Vec<&Entity> = entities.iter()
             .filter(|e| {
-                components.borrow::<PlayerComponent>(e).is_some() &&
-                    components.borrow::<PositionComponent>(e).is_some()
+                components.has_comp::<PlayerComponent>(e) &&
+                    components.has_comp::<PositionComponent>(e)
             }).collect();
 
         for entity in filtered_entities.iter() {
-            let player_comp = components.borrow::<PlayerComponent>(entity).unwrap();
-            let pos_comp = components.borrow_mut::<PositionComponent>(entity).unwrap();
+            let player_comp = components.borrow::<PlayerComponent>(entity);
+            let mut pos_comp = components.borrow_mut::<PositionComponent>(entity);
             let ms_dt = MOVE_SPEED * args.dt;
             if player_comp.control_scheme.intends(Up, event_handler) {
                 pos_comp.y += ms_dt;

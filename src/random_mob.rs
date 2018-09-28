@@ -49,13 +49,13 @@ impl RandomMobUpdateSystem {
     pub fn run(&self, args: &UpdateArgs, components: &mut ComponentMap, entities: &Vec<Entity>) {
         let filtered_entities: Vec<&Entity> = entities.iter()
             .filter(|e| {
-                components.borrow::<RandomMobComponent>(e).is_some() &&
-                    components.borrow::<PositionComponent>(e).is_some()
+                components.has_comp::<RandomMobComponent>(e) &&
+                    components.has_comp::<PositionComponent>(e)
             }).collect();
 
         for entity in filtered_entities {
-            let rando_comp = components.borrow_mut::<RandomMobComponent>(entity).unwrap();
-            let pos_comp = components.borrow_mut::<PositionComponent>(entity).unwrap();
+            let mut rando_comp = components.borrow_mut::<RandomMobComponent>(entity);
+            let mut pos_comp = components.borrow_mut::<PositionComponent>(entity);
 
             if rando_comp.change_cnt == 0 {
                 let mut rng = thread_rng();

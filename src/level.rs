@@ -1,4 +1,5 @@
 use std::any::{Any, TypeId};
+use std::cell::{Ref, RefMut};
 use std::collections::HashMap;
 
 use opengl_graphics::GlGraphics;
@@ -39,29 +40,20 @@ impl ComponentMap {
         Self { data: HashMap::new() }
     }
 
-    pub fn get<C: Component + Clone>(&self, entity: &mut Entity) -> Option<C> {
-        self.borrow::<C>(entity).map(|c| c.clone())
+    pub fn borrow<C: Component>(&self, entity: &Entity) -> Ref<C> {
+        self.entity_map::<C>().borrow(entity).unwrap()
     }
 
-    pub fn borrow<C: Component>(&self, entity: &Entity) -> Option<&C> {
-        self.entity_map::<C>().borrow(entity)
-    }
-
-    pub fn borrow_mut<C: Component>(&mut self, entity: &Entity) -> Option<&mut C> {
-        self.entity_map_mut::<C>().borrow_mut(entity)
+    pub fn borrow_mut<C: Component>(&self, entity: &Entity) -> RefMut<C> {
+        self.entity_map::<C>().borrow_mut(entity).unwrap()
     }
 
     pub fn set<C: Component>(&mut self, entity: &Entity, comp: C) {
         self.entity_map_mut::<C>().set(entity, comp);
     }
 
-    pub fn add_comp_type<C: Component>(&mut self) {
-        let type_id = TypeId::of::<C>();
-        if self.data.contains_key(&type_id) {
-            // TODO: Is there a macro to grab the name of the struct we're impling?
-            panic!("ComponentMap already contains {:?}", type_id);
-        }
-        self.data.insert(type_id, Box::new(GenerationalIndexArray::<C>(Vec::new())));
+    pub fn has_comp<C: Component>(&self, entity: &Entity) -> bool {
+        self.entity_map::<C>().has_entry(entity)
     }
 
     fn entity_map<C: Component>(&self) -> &GenerationalIndexArray<C> {
@@ -71,9 +63,19 @@ impl ComponentMap {
     }
 
     fn entity_map_mut<C: Component>(&mut self) -> &mut GenerationalIndexArray<C> {
-        self.data.get_mut(&TypeId::of::<C>())
+        self.data
+            .get_mut(&TypeId::of::<C>())
             .map(|gia| gia.downcast_mut().unwrap())
             .unwrap()
+    }
+
+    pub fn register<C: Component>(&mut self) {
+        let type_id = TypeId::of::<C>();
+        if self.data.contains_key(&type_id) {
+            // TODO: Is there a macro to grab the name of the struct we're impling?
+            panic!("ComponentMap already contains {:?}", type_id);
+        }
+        self.data.insert(type_id, Box::new(GenerationalIndexArray::<C>(Vec::new())));
     }
 }
 
@@ -123,6 +125,12 @@ impl Level {
             render_system: RenderSystem {},
             entity_allocator: GenerationalIndexAllocator::new(),
         };
+
+        // Register components
+        result.components.register::<PlayerComponent>();
+        result.components.register::<PositionComponent>();
+        result.components.register::<RandomMobComponent>();
+        result.components.register::<RenderComponent>();
 
         // Player One Setup
         let mut cs_one = ControlScheme::new();

@@ -13,13 +13,13 @@ impl RenderSystem {
 
         let filtered_entities: Vec<&Entity> = entities.iter()
             .filter(|e| {
-                components.borrow::<PositionComponent>(e).is_some() &&
-                    components.borrow::<RenderComponent>(e).is_some()
+                components.has_comp::<PositionComponent>(e) &&
+                    components.has_comp::<RenderComponent>(e)
             }).collect();
 
         for entity in filtered_entities.iter() {
-            let pos_comp = components.borrow::<PositionComponent>(entity).unwrap();
-            let render_comp = components.borrow::<RenderComponent>(entity).unwrap();
+            let pos_comp = components.borrow::<PositionComponent>(entity);
+            let render_comp = components.borrow::<RenderComponent>(entity);
 
             let (x, y) = ((args.width / 2) as f64, (args.height / 2) as f64);
             let square = rectangle::square(0.0, 0.0, render_comp.size);

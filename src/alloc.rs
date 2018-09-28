@@ -1,3 +1,5 @@
+use std::cell::{Ref, RefCell, RefMut};
+
 pub struct GenerationalIndex {
     idx: usize,
     generation: u64,
@@ -55,7 +57,7 @@ impl GenerationalIndexAllocator {
 }
 
 pub struct GenerationalArrayEntry<T> {
-    val: T,
+    val: RefCell<T>,
     generation: u64,
 }
 
@@ -84,13 +86,13 @@ impl<T> GenerationalIndexArray<T> {
         };
 
         self.0[gen_idx.idx] = Some(GenerationalArrayEntry {
-            val,
+            val: RefCell::new(val),
             generation: gen_idx.generation,
         });
         true
     }
 
-    pub fn borrow(&self, gen_idx: &GenerationalIndex) -> Option<&T> {
+    pub fn borrow(&self, gen_idx: &GenerationalIndex) -> Option<Ref<T>> {
         // TODO: Dedup this and `get_mut`.
         if !self.check_idx(gen_idx) {
             return None;
@@ -98,23 +100,27 @@ impl<T> GenerationalIndexArray<T> {
 
         match self.0[gen_idx.idx] {
             Some(ref e) => {
-                Some(&e.val)
+                Some(e.val.borrow())
             },
             None => None,
         }
     }
 
-    pub fn borrow_mut(&mut self, gen_idx: &GenerationalIndex) -> Option<&mut T> {
+    pub fn borrow_mut(&self, gen_idx: &GenerationalIndex) -> Option<RefMut<T>> {
         if !self.check_idx(gen_idx) {
             return None;
         }
 
         match self.0[gen_idx.idx] {
-            Some(ref mut e) => {
-                Some(&mut e.val)
+            Some(ref e) => {
+                Some(e.val.borrow_mut())
             },
             None => None,
         }
+    }
+
+    pub fn has_entry(&self, gen_idx: &GenerationalIndex) -> bool {
+        return self.check_idx(gen_idx) && self.0[gen_idx.idx].is_some()
     }
 
     /// Returns true if `gen_idx` points to a valid entry.  Otherwise, false.
