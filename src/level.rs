@@ -75,36 +75,14 @@ impl ComponentMap {
             // TODO: Is there a macro to grab the name of the struct we're impling?
             panic!("ComponentMap already contains {:?}", type_id);
         }
-        self.data.insert(type_id, Box::new(GenerationalIndexArray::<C>(Vec::new())));
+        self.data.insert(type_id, Box::new(GenerationalIndexArray::<C>::new()));
     }
 }
-
-/*
-pub struct Components {
-    pub positions: EntityMap<PositionComponent>,
-    pub players: EntityMap<PlayerComponent>,
-    pub randos: EntityMap<RandomMobComponent>,
-    pub renderables: EntityMap<RenderComponent>,
-}
-
-impl Components {
-    pub fn new() -> Self {
-        Self {
-            // TODO: Don't make the client pass in a vec.
-            positions: GenerationalIndexArray(Vec::new()),
-            players: GenerationalIndexArray(Vec::new()),
-            randos: GenerationalIndexArray(Vec::new()),
-            renderables: GenerationalIndexArray(Vec::new()),
-        }
-    }
-}
-*/
 
 pub struct Level {
     // Entities
     entities: Vec<Entity>,
     // Components
-    //pub components: Components,
     pub components: ComponentMap,
     // Systems
     player_update_system: PlayerUpdateSystem,

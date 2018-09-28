@@ -61,21 +61,27 @@ pub struct GenerationalArrayEntry<T> {
     generation: u64,
 }
 
-pub struct GenerationalIndexArray<T>(pub Vec<Option<GenerationalArrayEntry<T>>>);
+pub struct GenerationalIndexArray<T> {
+    data: Vec<Option<GenerationalArrayEntry<T>>>,
+}
 
 impl<T> GenerationalIndexArray<T> {
+    pub fn new() -> Self {
+        Self { data: Vec::new() }
+    }
+
     pub fn set(&mut self, gen_idx: &GenerationalIndex, val: T) -> bool {
-        if gen_idx.idx >= self.0.len() {
+        if gen_idx.idx >= self.data.len() {
             // If the index we're setting is larger than the current array, resize it and fill the new slots with `None`s.
-            while self.0.len() <= gen_idx.idx {
-                self.0.push(None);
+            while self.data.len() <= gen_idx.idx {
+                self.data.push(None);
             }
             // TODO: Soooon you'll be able to do this.  Nightly-only, right now.
-            // self.0.resize_with(gen_idx.idx + 1, None);
+            // self.data.resize_with(gen_idx.idx + 1, None);
         }
 
         // TODO: Should we be checking generations at all here?
-        match self.0[gen_idx.idx] {
+        match self.data[gen_idx.idx] {
             Some(ref mut e) => {
                 // Don't allow old generations to overwrite new generations.
                 if e.generation > gen_idx.generation {
@@ -85,7 +91,7 @@ impl<T> GenerationalIndexArray<T> {
             _ => (),
         };
 
-        self.0[gen_idx.idx] = Some(GenerationalArrayEntry {
+        self.data[gen_idx.idx] = Some(GenerationalArrayEntry {
             val: RefCell::new(val),
             generation: gen_idx.generation,
         });
@@ -98,7 +104,7 @@ impl<T> GenerationalIndexArray<T> {
             return None;
         }
 
-        match self.0[gen_idx.idx] {
+        match self.data[gen_idx.idx] {
             Some(ref e) => {
                 Some(e.val.borrow())
             },
@@ -111,7 +117,7 @@ impl<T> GenerationalIndexArray<T> {
             return None;
         }
 
-        match self.0[gen_idx.idx] {
+        match self.data[gen_idx.idx] {
             Some(ref e) => {
                 Some(e.val.borrow_mut())
             },
@@ -120,15 +126,15 @@ impl<T> GenerationalIndexArray<T> {
     }
 
     pub fn has_entry(&self, gen_idx: &GenerationalIndex) -> bool {
-        return self.check_idx(gen_idx) && self.0[gen_idx.idx].is_some()
+        return self.check_idx(gen_idx) && self.data[gen_idx.idx].is_some()
     }
 
     /// Returns true if `gen_idx` points to a valid entry.  Otherwise, false.
     fn check_idx(&self, gen_idx: &GenerationalIndex) -> bool {
-        if gen_idx.idx >= self.0.len() {
+        if gen_idx.idx >= self.data.len() {
             return false;
         }
-        if let Some(ref e) = self.0[gen_idx.idx] {
+        if let Some(ref e) = self.data[gen_idx.idx] {
             if e.generation != gen_idx.generation  {
                 return false;
             }
