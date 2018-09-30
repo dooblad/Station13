@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct PositionComponent {
     pub x: f64,
     pub y: f64,

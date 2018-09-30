@@ -54,6 +54,18 @@ impl GenerationalIndexAllocator {
         let entry = &self.entries[gen_idx.idx];
         entry.is_live && entry.generation == gen_idx.generation
     }
+
+    /// Returns an iterator over all live indices.
+    pub fn iter<'a>(&'a self) -> impl Iterator<Item = GenerationalIndex> + 'a {
+        self.entries.iter()
+            .enumerate()
+            .filter(|(_, e)| e.is_live)
+            .map(|(i, e)| GenerationalIndex {
+                idx: i,
+                generation: e.generation,
+            })
+    }
+
 }
 
 pub struct GenerationalArrayEntry<T> {
@@ -82,10 +94,10 @@ impl<T> GenerationalIndexArray<T> {
 
         // TODO: Should we be checking generations at all here?
         match self.data[gen_idx.idx] {
-            Some(ref mut e) => {
+            Some(ref e) => {
                 // Don't allow old generations to overwrite new generations.
                 if e.generation > gen_idx.generation {
-                    panic!("Can this even happen?");
+                    panic!("can this even happen?");
                 }
             },
             _ => (),
@@ -95,6 +107,26 @@ impl<T> GenerationalIndexArray<T> {
             val: RefCell::new(val),
             generation: gen_idx.generation,
         });
+        true
+    }
+
+    /// Returns true if the entry was successfully removed.  The only case where it won't be removed
+    /// is when there is a newer-generation entry occupying the space.
+    pub fn remove(&mut self, gen_idx: &GenerationalIndex) -> bool {
+        if gen_idx.idx >= self.data.len() {
+            return false;
+        }
+
+        match self.data[gen_idx.idx] {
+            Some(ref e) => {
+                if e.generation > gen_idx.generation {
+                    return false;
+                }
+            },
+            _ => (),
+        };
+
+        self.data[gen_idx.idx] = None;
         true
     }
 

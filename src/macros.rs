@@ -1,0 +1,30 @@
+/// Makes it more ergonomic to define which components a system requires.
+///
+/// Example:
+/// ```
+/// let filter = type_id_vec!(PositionComponent, HealthComponent);
+/// ```
+///
+/// Credit goes to "AndyBaron/rustic-ecs" on Github for this one.
+macro_rules! type_id_vec {
+    ($($x:ty),*) => (
+        vec![$(TypeId::of::<$x>()),*]
+    );
+    ($($x:ty,)*) => (type_id_vec![$($x),*])
+}
+
+/// For defining a list of boxed systems by name.
+///
+/// Example:
+/// ```
+/// let systems = sys_vec![
+///     PlayerUpdateSystem,
+///     RandomMobUpdateSystem,
+/// ];
+/// ```
+macro_rules! sys_vec {
+    ($($x:ident),*) => (
+        vec![$(Box::new($x {})),*]
+    );
+    ($($x:ident,)*) => (sys_vec![$($x),*])
+}

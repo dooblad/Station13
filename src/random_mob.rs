@@ -1,11 +1,14 @@
 extern crate rand;
 
-use self::rand::{thread_rng, Rng};
+use std::any::TypeId;
 
+use self::rand::{thread_rng, Rng};
 use piston::input::*;
 
 use components::{PositionComponent, RenderComponent};
-use level::{ComponentMap, Entity, Level};
+use event_handler::EventHandler;
+use level::{Entity, EntityMap, Level};
+use systems::System;
 
 pub const MOVE_SPEED: f64 = 500.0;
 const CHANGE_INTERVAL: u32 = 60;
@@ -26,17 +29,10 @@ pub struct RandomMobComponent {
 
 pub fn new(level: &mut Level) -> Entity {
     let result = level.create_entity();
-    /*
-    level.components.positions.set(&result, PositionComponent { x: 0.0, y: 0.0 });
-    level.components.randos.set(&result, RandomMobComponent { change_cnt: 0, curr_dir: Dir::Up });
-    level.components.renderables.set(&result, RenderComponent {
-        color: COLOR,
-        size: SIZE,
-    });
-    */
-    level.components.set(&result, PositionComponent { x: 0.0, y: 0.0 });
-    level.components.set(&result, RandomMobComponent { change_cnt: 0, curr_dir: Dir::Up });
-    level.components.set(&result, RenderComponent {
+    let mut comp_map = level.entity_map.borrow_mut(&result).unwrap();
+    comp_map.set(PositionComponent { x: 0.0, y: 0.0 });
+    comp_map.set(RandomMobComponent { change_cnt: 0, curr_dir: Dir::Up });
+    comp_map.set(RenderComponent {
         color: COLOR,
         size: SIZE,
     });
@@ -45,39 +41,47 @@ pub fn new(level: &mut Level) -> Entity {
 
 pub struct RandomMobUpdateSystem;
 
-impl RandomMobUpdateSystem {
-    pub fn run(&self, args: &UpdateArgs, components: &mut ComponentMap, entities: &Vec<Entity>) {
-        let filtered_entities: Vec<&Entity> = entities.iter()
-            .filter(|e| {
-                components.has_comp::<RandomMobComponent>(e) &&
-                    components.has_comp::<PositionComponent>(e)
-            }).collect();
+impl System for RandomMobUpdateSystem {
+    fn comp_constraints(&self) -> Vec<TypeId> {
+        type_id_vec![RandomMobComponent, PositionComponent]
+    }
 
-        for entity in filtered_entities {
-            let mut rando_comp = components.borrow_mut::<RandomMobComponent>(entity);
-            let mut pos_comp = components.borrow_mut::<PositionComponent>(entity);
+    fn run(&self, _: &EventHandler, args: &UpdateArgs, entity_map: &mut EntityMap,
+           entities: &Vec<Entity>) {
+        for entity in entities {
+            let mut comp_map = entity_map.borrow_mut(entity).unwrap();
 
-            if rando_comp.change_cnt == 0 {
-                let mut rng = thread_rng();
-                let rand_num = rng.gen_range(0, 4);
-                rando_comp.curr_dir = match rand_num {
-                    0 => Dir::Up,
-                    1 => Dir::Down,
-                    2 => Dir::Left,
-                    3 => Dir::Right,
-                    _ => panic!(),
+            let (dx, dy) = {
+                let rando_comp = comp_map.borrow_mut::<RandomMobComponent>();
+                if rando_comp.change_cnt == 0 {
+                    let mut rng = thread_rng();
+                    let rand_num = rng.gen_range(0, 4);
+                    rando_comp.curr_dir = match rand_num {
+                        0 => Dir::Up,
+                        1 => Dir::Down,
+                        2 => Dir::Left,
+                        3 => Dir::Right,
+                        _ => panic!(),
+                    };
+                }
+
+                let ms_dt = MOVE_SPEED * args.dt;
+                let mut dx = 0.0f64;
+                let mut dy = 0.0f64;
+                match rando_comp.curr_dir {
+                    Dir::Up => dy += ms_dt,
+                    Dir::Down => dy -= ms_dt,
+                    Dir::Left => dx += ms_dt,
+                    Dir::Right => dx -= ms_dt,
                 };
-            }
-            let ms_dt = MOVE_SPEED * args.dt;
+                rando_comp.change_cnt = (rando_comp.change_cnt + 1) % CHANGE_INTERVAL;
 
-            match rando_comp.curr_dir {
-                Dir::Up => pos_comp.y += ms_dt,
-                Dir::Down => pos_comp.y -= ms_dt,
-                Dir::Left => pos_comp.x += ms_dt,
-                Dir::Right => pos_comp.x -= ms_dt,
+                (dx, dy)
             };
 
-            rando_comp.change_cnt = (rando_comp.change_cnt + 1) % CHANGE_INTERVAL;
+            let pos_comp = comp_map.borrow_mut::<PositionComponent>();
+            pos_comp.x += dx;
+            pos_comp.y += dy;
         }
     }
 }

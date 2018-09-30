@@ -1,10 +1,12 @@
+use std::any::TypeId;
 use std::collections::HashMap;
 
 use piston::input::*;
 
 use components::{PositionComponent, RenderComponent};
-use level::{ComponentMap, Entity, Level};
 use event_handler::EventHandler;
+use level::{Entity, EntityMap, Level};
+use systems::System;
 
 pub const MOVE_SPEED: f64 = 500.0;
 pub const COLOR: [f32; 4] = [0.7, 0.3, 0.3, 1.0];  // Red
@@ -17,7 +19,9 @@ pub enum Intent {
     Left,
     Right,
 }
+
 pub struct ControlScheme(pub HashMap<Intent, Key>);
+
 impl ControlScheme {
     pub fn new() -> Self {
         ControlScheme(HashMap::new())
@@ -38,17 +42,10 @@ pub struct PlayerComponent {
 
 pub fn new(control_scheme: ControlScheme, level: &mut Level) -> Entity {
     let result = level.create_entity();
-    /*
-    level.components.positions.set(&result, PositionComponent { x: 0.0, y: 0.0 });
-    level.components.players.set(&result, PlayerComponent { control_scheme });
-    level.components.renderables.set(&result, RenderComponent {
-        color: COLOR,
-        size: SIZE,
-    });
-    */
-    level.components.set(&result, PositionComponent { x: 0.0, y: 0.0 });
-    level.components.set(&result, PlayerComponent { control_scheme });
-    level.components.set(&result, RenderComponent {
+    let mut comp_map = level.entity_map.borrow_mut(&result).unwrap();
+    comp_map.set(PositionComponent { x: 0.0, y: 0.0 });
+    comp_map.set(PlayerComponent { control_scheme });
+    comp_map.set(RenderComponent {
         color: COLOR,
         size: SIZE,
     });
@@ -57,33 +54,39 @@ pub fn new(control_scheme: ControlScheme, level: &mut Level) -> Entity {
 
 pub struct PlayerUpdateSystem;
 
-impl PlayerUpdateSystem {
-    pub fn run(&self, event_handler: &EventHandler, args: &UpdateArgs,
-               components: &mut ComponentMap, entities: &Vec<Entity>) {
+impl System for PlayerUpdateSystem {
+    fn comp_constraints(&self) -> Vec<TypeId> {
+        type_id_vec![PlayerComponent, PositionComponent]
+    }
+
+    fn run(&self, event_handler: &EventHandler, args: &UpdateArgs, entity_map: &mut EntityMap,
+           entities: &Vec<Entity>) {
         use self::Intent::*;
 
-        let filtered_entities: Vec<&Entity> = entities.iter()
-            .filter(|e| {
-                components.has_comp::<PlayerComponent>(e) &&
-                    components.has_comp::<PositionComponent>(e)
-            }).collect();
-
-        for entity in filtered_entities.iter() {
-            let player_comp = components.borrow::<PlayerComponent>(entity);
-            let mut pos_comp = components.borrow_mut::<PositionComponent>(entity);
-            let ms_dt = MOVE_SPEED * args.dt;
-            if player_comp.control_scheme.intends(Up, event_handler) {
-                pos_comp.y += ms_dt;
-            }
-            if player_comp.control_scheme.intends(Down, event_handler) {
-                pos_comp.y -= ms_dt;
-            }
-            if player_comp.control_scheme.intends(Left, event_handler) {
-                pos_comp.x += ms_dt;
-            }
-            if player_comp.control_scheme.intends(Right, event_handler) {
-                pos_comp.x -= ms_dt;
-            }
+        for entity in entities {
+            let mut comp_map = entity_map.borrow_mut(entity).unwrap();
+            let (dx, dy) = {
+                let player_comp = comp_map.borrow::<PlayerComponent>();
+                let ms_dt = MOVE_SPEED * args.dt;
+                let mut dx = 0.0f64;
+                let mut dy = 0.0f64;
+                if player_comp.control_scheme.intends(Up, event_handler) {
+                    dy += ms_dt;
+                }
+                if player_comp.control_scheme.intends(Down, event_handler) {
+                    dy -= ms_dt;
+                }
+                if player_comp.control_scheme.intends(Left, event_handler) {
+                    dx += ms_dt;
+                }
+                if player_comp.control_scheme.intends(Right, event_handler) {
+                    dx -= ms_dt;
+                }
+                (dx, dy)
+            };
+            let pos_comp = comp_map.borrow_mut::<PositionComponent>();
+            pos_comp.x += dx;
+            pos_comp.y += dy;
         }
     }
 }

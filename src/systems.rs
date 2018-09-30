@@ -1,25 +1,40 @@
+use std::any::TypeId;
+
 use graphics::Context;
 use opengl_graphics::GlGraphics;
-use piston::input::RenderArgs;
+use piston::input::{RenderArgs, UpdateArgs};
 
 use components::{PositionComponent, RenderComponent};
-use level::{ComponentMap, Entity};
+use event_handler::EventHandler;
+use level::{Entity, EntityMap};
+
+pub trait System {
+    fn comp_constraints(&self) -> Vec<TypeId>;
+    fn run(&self, event_handler: &EventHandler, args: &UpdateArgs, entity_map: &mut EntityMap,
+           entities: &Vec<Entity>);
+}
 
 pub struct RenderSystem;
 
 impl RenderSystem {
-    pub fn run(&self, gl: &mut GlGraphics, c: Context, args: &RenderArgs, components: &ComponentMap, entities: &Vec<Entity>) {
+    pub fn comp_constraints(&self) -> Vec<TypeId> {
+        type_id_vec![PositionComponent, RenderComponent]
+    }
+
+    pub fn run(&self, gl: &mut GlGraphics, c: Context, args: &RenderArgs, entity_map: &EntityMap, entities: &Vec<Entity>) {
         use graphics::*;
 
         let filtered_entities: Vec<&Entity> = entities.iter()
             .filter(|e| {
-                components.has_comp::<PositionComponent>(e) &&
-                    components.has_comp::<RenderComponent>(e)
+                let comp_map = entity_map.borrow(e).unwrap();
+                comp_map.has::<PositionComponent>() &&
+                    comp_map.has::<RenderComponent>()
             }).collect();
 
         for entity in filtered_entities.iter() {
-            let pos_comp = components.borrow::<PositionComponent>(entity);
-            let render_comp = components.borrow::<RenderComponent>(entity);
+            let mut comp_map = entity_map.borrow_mut(entity).unwrap();
+            let pos_comp = comp_map.get::<PositionComponent>();
+            let render_comp = comp_map.borrow_mut::<RenderComponent>();
 
             let (x, y) = ((args.width / 2) as f64, (args.height / 2) as f64);
             let square = rectangle::square(0.0, 0.0, render_comp.size);

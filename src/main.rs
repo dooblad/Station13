@@ -3,7 +3,10 @@ extern crate graphics;
 extern crate opengl_graphics;
 extern crate piston;
 
-//pub mod ecs;
+// Load all macros before other modules, because of how macro scoping works.
+#[macro_use]
+pub mod macros;
+
 pub mod alloc;
 pub mod components;
 pub mod event_handler;
