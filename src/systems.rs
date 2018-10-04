@@ -21,7 +21,8 @@ impl RenderSystem {
         type_id_vec![PositionComponent, RenderComponent]
     }
 
-    pub fn run(&self, gl: &mut GlGraphics, c: Context, args: &RenderArgs, entity_map: &EntityMap, entities: &Vec<Entity>) {
+    pub fn run(&self, gl: &mut GlGraphics, c: Context, args: &RenderArgs, entity_map: &EntityMap,
+               entities: &Vec<Entity>) {
         use graphics::*;
 
         let filtered_entities: Vec<&Entity> = entities.iter()
