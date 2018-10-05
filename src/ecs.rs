@@ -69,7 +69,7 @@ impl ComponentMap {
     }
 }
 
-pub struct Level {
+pub struct Ecs {
     pub entity_map: GenerationalIndexArray<ComponentMap>,
     // The order of the systems in the vec defines the order in which the systems will be run.
     logic_systems: Vec<Box<System>>,
@@ -78,7 +78,7 @@ pub struct Level {
     players: Vec<Entity>,
 }
 
-impl Level {
+impl Ecs {
     pub fn new() -> Self {
         let mut result = Self {
             entity_map: GenerationalIndexArray::new(),

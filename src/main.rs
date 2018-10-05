@@ -10,8 +10,7 @@ pub mod macros;
 pub mod alloc;
 pub mod components;
 pub mod event_handler;
-pub mod level;
-//pub mod net;
+pub mod ecs;
 pub mod player;
 pub mod random_mob;
 pub mod systems;
@@ -23,30 +22,30 @@ use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{GlGraphics, OpenGL};
 
 use event_handler::EventHandler;
-use level::Level;
+use ecs::Ecs;
 
 pub const WINDOW_TITLE: &'static str = "Station 13";
 pub const WINDOW_DIMS: [u32; 2] = [800, 600];
 
 pub struct Game {
     gl: GlGraphics,
-    level: Level,
+    ecs: Ecs,
 }
 
 impl Game {
     pub fn new(gl: GlGraphics) -> Self {
         Game {
             gl,
-            level: Level::new(),
+            ecs: Ecs::new(),
         }
     }
 
     pub fn tick(&mut self, args: &UpdateArgs, event_handler: &EventHandler) {
-        self.level.tick(args, event_handler);
+        self.ecs.tick(args, event_handler);
     }
 
     pub fn render(&mut self, args: &RenderArgs) {
-        self.level.render(&mut self.gl, args);
+        self.ecs.render(&mut self.gl, args);
     }
 }
 

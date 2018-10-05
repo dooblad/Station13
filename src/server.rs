@@ -1,22 +1,24 @@
 #[macro_use]
 extern crate enum_primitive;
 
-pub mod common;
+pub mod net;
 
 use std::io::Result;
 use std::net::SocketAddrV4;
 
-use self::common::*;
-use self::socket::GameSocket;
+use net::common::*;
+use net::common::socket::GameSocket;
 
 pub struct Server {
-    pub socket: GameSocket,
+    socket: GameSocket,
+    clients: Vec<SocketAddrV4>,
 }
 
 impl Server {
     pub fn new(bind_addr: SocketAddrV4) -> Self {
         Self {
             socket: GameSocket::new(bind_addr),
+            clients: vec![],
         }
     }
 
@@ -24,13 +26,17 @@ impl Server {
         for (packet, src) in self.socket.poll().iter() {
             match packet {
                 Packet::Hello { name } => {
-                    println!("client \"{}\" said hello", name);
-                    self.socket.send_to(Packet::HelloAck {}, src);
+                    println!("player \"{}\" said hello", name);
+                    self.clients.push(src.clone());
+                    // TODO: Decide client ID.
+                    self.socket.send_to(Packet::HelloAck {}, &src);
                 },
                 Packet::HelloAck {} => eprintln!("received HelloAck from client"),
             };
         }
     }
+
+    pub fn socket(&self) -> &GameSocket { &self.socket }
 }
 
 fn main() -> Result<()> {

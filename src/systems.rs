@@ -6,7 +6,7 @@ use piston::input::{RenderArgs, UpdateArgs};
 
 use components::{PositionComponent, RenderComponent};
 use event_handler::EventHandler;
-use level::{Entity, EntityMap};
+use ecs::{Entity, EntityMap};
 
 pub trait System {
     fn comp_constraints(&self) -> Vec<TypeId>;

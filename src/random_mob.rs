@@ -7,7 +7,7 @@ use piston::input::*;
 
 use components::{PositionComponent, RenderComponent};
 use event_handler::EventHandler;
-use level::{Entity, EntityMap, Level};
+use ecs::{Entity, EntityMap, Ecs};
 use systems::System;
 
 pub const MOVE_SPEED: f64 = 500.0;
@@ -27,7 +27,7 @@ pub struct RandomMobComponent {
     curr_dir: Dir,
 }
 
-pub fn new(level: &mut Level) -> Entity {
+pub fn new(level: &mut Ecs) -> Entity {
     let result = level.create_entity();
     let mut comp_map = level.entity_map.borrow_mut(&result).unwrap();
     comp_map.set(PositionComponent { x: 0.0, y: 0.0 });
