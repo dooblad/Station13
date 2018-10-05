@@ -1,53 +1,81 @@
+extern crate glutin_window;
+extern crate graphics;
+extern crate opengl_graphics;
+extern crate piston;
 
 extern crate game;
 
-use std::fmt::Debug;
-use std::io::Result;
-use std::net::SocketAddrV4;
+pub mod net;
 
+use piston::window::WindowSettings;
+use piston::event_loop::*;
+use piston::input::*;
+use glutin_window::GlutinWindow as Window;
+use opengl_graphics::{GlGraphics, OpenGL};
+
+use game::event_handler::EventHandler;
+use game::ecs::Ecs;
 use game::net::*;
-use game::net::socket::GameSocket;
 
-pub struct Client {
-    pub socket: GameSocket,
-    pub server_addr: SocketAddrV4,
+use net::Client;
+
+pub const WINDOW_TITLE: &'static str = "Station 13";
+pub const WINDOW_DIMS: [u32; 2] = [800, 600];
+
+pub const USERNAME: &'static str = "Doobs";
+
+pub struct Game {
+    gl: GlGraphics,
+    client: Client,
+    ecs: Ecs,
 }
 
-impl Client {
-    pub fn new(bind_addr: SocketAddrV4, server_addr: SocketAddrV4) -> Self {
-        Self {
-            socket: GameSocket::new(bind_addr),
-            server_addr,
+impl Game {
+    pub fn new(gl: GlGraphics) -> Self {
+        let mut client = Client::new(
+            to_socket_addr(BIND_ADDR, CLIENT_PORT),
+            to_socket_addr(BIND_ADDR, SERVER_PORT));
+        client.send(Packet::Hello { name: USERNAME.to_string() });
+
+        Game {
+            gl,
+            client,
+            ecs: Ecs::new(),
         }
     }
 
-    pub fn tick(&mut self) {
-        for (packet, _) in self.socket.poll().iter() {
-            match packet {
-                Packet::Hello { name: _ } => eprintln!("received Hello from server"),
-                Packet::HelloAck {} => {
-                    println!("received {:?}", packet);
-                },
-            };
-        }
+    pub fn tick(&mut self, args: &UpdateArgs, event_handler: &EventHandler) {
+        self.client.tick();
+        self.ecs.tick(args, event_handler);
     }
 
-    pub fn send<S: Serialize + Debug>(&mut self, data: S) {
-        self.socket.send_to(data, &self.server_addr);
+    pub fn render(&mut self, args: &RenderArgs) {
+        self.ecs.render(&mut self.gl, args);
     }
 }
 
-fn main() -> Result<()> {
-    use std::{thread, time};
+fn main() {
+    let opengl = OpenGL::V3_2;
 
-    let mut client = Client::new(
-        to_socket_addr(BIND_ADDR, CLIENT_PORT),
-        to_socket_addr(BIND_ADDR, SERVER_PORT));
-    client.send(Packet::Hello { name: "doobs".to_string() });
+    let mut window: Window = WindowSettings::new(WINDOW_TITLE, WINDOW_DIMS)
+        .exit_on_esc(true)
+        .opengl(OpenGL::V3_2)
+        .build()
+        .unwrap();
 
-    let ten_millis = time::Duration::from_millis(10);
-    loop {
-        client.tick();
-        thread::sleep(ten_millis);
+    let mut game = Game::new(GlGraphics::new(opengl));
+    let mut event_handler = EventHandler::new();
+
+    let mut events = Events::new(EventSettings::new());
+    while let Some(e) = events.next(&mut window) {
+        event_handler.tick(&e);
+
+        if let Some(u) = e.update_args() {
+            game.tick(&u, &event_handler);
+        }
+
+        if let Some(r) = e.render_args() {
+            game.render(&r);
+        }
     }
 }
