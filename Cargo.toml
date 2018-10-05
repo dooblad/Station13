@@ -3,17 +3,17 @@ name = "station13"
 version = "0.1.0"
 authors = ["doobs"]
 
-[[bin]]
+[lib]
 name = "game"
-path = "src/main.rs"
+path = "src/lib/lib.rs"
 
 [[bin]]
 name = "client"
-path = "src/client.rs"
+path = "src/client/main.rs"
 
 [[bin]]
 name = "server"
-path = "src/server.rs"
+path = "src/server/main.rs"
 
 [dependencies]
 enum_primitive = "0.1.1"

@@ -1,19 +1,19 @@
-extern crate glutin_window;
-extern crate graphics;
-extern crate opengl_graphics;
-extern crate piston;
-
-// Load all macros before other modules, because of how macro scoping works.
-#[macro_use]
-pub mod macros;
-
-pub mod alloc;
-pub mod components;
-pub mod event_handler;
-pub mod ecs;
-pub mod player;
-pub mod random_mob;
-pub mod systems;
+//extern crate glutin_window;
+//extern crate graphics;
+//extern crate opengl_graphics;
+//extern crate piston;
+//
+//// Load all macros before other modules, because of how macro scoping works.
+//#[macro_use]
+//pub mod macros;
+//
+//pub mod alloc;
+//pub mod components;
+//pub mod event_handler;
+//pub mod ecs;
+//pub mod player;
+//pub mod random_mob;
+//pub mod systems;
 
 use piston::window::WindowSettings;
 use piston::event_loop::*;

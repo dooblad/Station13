@@ -49,7 +49,7 @@ pub enum PacketId {
 
 impl Packet {
     pub fn id(&self) -> u8 {
-        use Packet::*;
+        use self::Packet::*;
         match *self {
             Hello { name: _ } => PacketId::Hello as u8,
             HelloAck {} => PacketId::HelloAck as u8,
@@ -60,7 +60,7 @@ impl Packet {
 
 impl Serialize for Packet {
     fn raw_data(&self) -> Vec<u8> {
-        use Packet::*;
+        use self::Packet::*;
         let mut result = vec![self.id()];
         match *self {
             Hello {ref name} => {
@@ -74,7 +74,7 @@ impl Serialize for Packet {
 
 impl Deserialize for Packet {
     fn deserialize(data: &[u8]) -> Self {
-        use Packet::*;
+        use self::Packet::*;
         let (id, rest) = data.split_at(1);
         let id_enum = PacketId::from_u8(id[0]).expect(&format!("unknown packet ID {}", id[0]));
         match id_enum {

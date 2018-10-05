@@ -1,14 +1,12 @@
-#[macro_use]
-extern crate enum_primitive;
 
-pub mod net;
+extern crate game;
 
 use std::fmt::Debug;
 use std::io::Result;
 use std::net::SocketAddrV4;
 
-use net::common::*;
-use net::common::socket::GameSocket;
+use game::net::*;
+use game::net::socket::GameSocket;
 
 pub struct Client {
     pub socket: GameSocket,
