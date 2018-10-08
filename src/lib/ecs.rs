@@ -2,15 +2,9 @@ use std::any::{Any, TypeId};
 use std::collections::HashMap;
 
 use opengl_graphics::GlGraphics;
-use piston::input::{Key, RenderArgs, UpdateArgs};
 
 use alloc::{GenerationalIndex, GenerationalIndexAllocator, GenerationalIndexArray};
-use event_handler::EventHandler;
-use player;
-use player::{ControlScheme, Intent, PlayerUpdateSystem};
-use random_mob;
-use random_mob::RandomMobUpdateSystem;
-use systems::{RenderSystem, System};
+use systems::System;
 
 pub const LEVEL_WIDTH: usize = 32;
 pub const LEVEL_HEIGHT: usize = 32;
@@ -33,7 +27,9 @@ pub struct ComponentMap {
 
 impl ComponentMap {
     pub fn new() -> Self {
-        Self { data: HashMap::new() }
+        Self {
+            data: HashMap::new(),
+        }
     }
 
     pub fn get<C: Component + Clone>(&self) -> C {
@@ -41,13 +37,15 @@ impl ComponentMap {
     }
 
     pub fn borrow<C: Component>(&self) -> &C {
-        self.data.get(&TypeId::of::<C>())
+        self.data
+            .get(&TypeId::of::<C>())
             .map(|c| c.downcast_ref().unwrap())
             .unwrap()
     }
 
     pub fn borrow_mut<C: Component>(&mut self) -> &mut C {
-        self.data.get_mut(&TypeId::of::<C>())
+        self.data
+            .get_mut(&TypeId::of::<C>())
             .map(|c| c.downcast_mut().unwrap())
             .unwrap()
     }
@@ -69,52 +67,43 @@ impl ComponentMap {
     }
 }
 
-pub struct Ecs {
+pub struct Ecs<T> {
     pub entity_map: GenerationalIndexArray<ComponentMap>,
     // The order of the systems in the vec defines the order in which the systems will be run.
-    logic_systems: Vec<Box<System>>,
-    render_system: RenderSystem,
+    systems: Vec<Box<dyn System<T>>>,
     entity_allocator: GenerationalIndexAllocator,
     players: Vec<Entity>,
 }
 
-impl Ecs {
+impl<T> Ecs<T> {
     pub fn new() -> Self {
-        let mut result = Self {
+        Self {
             entity_map: GenerationalIndexArray::new(),
-            logic_systems: sys_vec![
-                PlayerUpdateSystem,
-                RandomMobUpdateSystem,
-            ],
-            render_system: RenderSystem,
+            systems: Vec::new(),
             entity_allocator: GenerationalIndexAllocator::new(),
             players: Vec::new(),
-        };
-
-        // Player One Setup
-        let mut cs_one = ControlScheme::new();
-        cs_one.0.insert(Intent::Up, Key::W);
-        cs_one.0.insert(Intent::Down, Key::S);
-        cs_one.0.insert(Intent::Left, Key::A);
-        cs_one.0.insert(Intent::Right, Key::D);
-        let player_one = player::new(cs_one, &mut result);
-        result.players.push(player_one);
-
-        // Player Two Setup
-        let mut cs_two = ControlScheme::new();
-        cs_two.0.insert(Intent::Up, Key::Up);
-        cs_two.0.insert(Intent::Down, Key::Down);
-        cs_two.0.insert(Intent::Left, Key::Left);
-        cs_two.0.insert(Intent::Right, Key::Right);
-        let player_two = player::new(cs_two, &mut result);
-        result.players.push(player_two);
-
-        // Add randos.
-        for _ in 0..8 {
-            random_mob::new(&mut result);
         }
+    }
 
-        result
+    pub fn tick(&mut self, tick_config: &T) {
+        for system in self.systems.iter() {
+            // Find which components we need to filter on.
+            let comp_constraints = system.comp_constraints();
+            let filtered_entities: Vec<Entity> = self
+                .entity_allocator
+                .entries()
+                .filter(|e| {
+                    let comp_map = self.entity_map.borrow(e).unwrap();
+                    for comp_type_id in comp_constraints.iter() {
+                        if !comp_map.has_type_id(comp_type_id) {
+                            return false;
+                        }
+                    }
+                    true
+                })
+                .collect();
+            system.run(tick_config, &mut self.entity_map, &filtered_entities);
+        }
     }
 
     pub fn create_entity(&mut self) -> Entity {
@@ -134,46 +123,11 @@ impl Ecs {
         map_rm_success
     }
 
-    pub fn tick(&mut self, args: &UpdateArgs, event_handler: &EventHandler) {
-        for system in self.logic_systems.iter() {
-            // Find which components we need to filter on.
-            let comp_constraints = system.comp_constraints();
-            let filtered_entities: Vec<Entity> = self.entity_allocator.iter()
-                .filter(|e| {
-                    let comp_map = self.entity_map.borrow(e).unwrap();
-                    for comp_type_id in comp_constraints.iter() {
-                        if !comp_map.has_type_id(comp_type_id) {
-                            return false;
-                        }
-                    }
-                    true
-                }).collect();
-            system.run(event_handler, args, &mut self.entity_map, &filtered_entities);
-        }
+    pub fn systems(&mut self) -> &mut Vec<Box<dyn System<T>>> {
+        &mut self.systems
     }
 
-    pub fn render(&mut self, gl: &mut GlGraphics, args: &RenderArgs) {
-        use graphics::*;
-
-        const GREEN: [f32; 4] = [0.3, 0.7, 0.3, 1.0];
-
-        gl.draw(args.viewport(), |c, gl| {
-            clear(GREEN, gl);
-            {
-                let comp_constraints = self.render_system.comp_constraints();
-                let filtered_entities: Vec<Entity> = self.entity_allocator.iter()
-                    .filter(|e| {
-                        let comp_map = self.entity_map.borrow(e).unwrap();
-                        for comp_type_id in comp_constraints.iter() {
-                            if !comp_map.has_type_id(comp_type_id) {
-                                return false;
-                            }
-                        }
-                        true
-                    }).collect();
-                self.render_system.run(gl, c, args, &mut self.entity_map, &filtered_entities);
-            }
-        });
-
+    pub fn entities<'a>(&'a self) -> impl Iterator<Item = Entity> + 'a {
+        self.entity_allocator.entries()
     }
 }

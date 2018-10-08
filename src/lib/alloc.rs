@@ -1,5 +1,6 @@
 use std::cell::{Ref, RefCell, RefMut};
 
+#[derive(Debug)]
 pub struct GenerationalIndex {
     idx: usize,
     generation: u64,
@@ -29,12 +30,21 @@ impl GenerationalIndexAllocator {
             let mut entry = &mut self.entries[e_idx];
             entry.is_live = true;
             entry.generation += 1;
-            let gen_idx = GenerationalIndex { idx: e_idx, generation: entry.generation };
+            let gen_idx = GenerationalIndex {
+                idx: e_idx,
+                generation: entry.generation,
+            };
             gen_idx
         } else {
             // No free entries.  Allocate new one.
-            let gen_idx = GenerationalIndex { idx: self.entries.len(), generation: 0 };
-            self.entries.push(AllocatorEntry { is_live: true, generation: 0 });
+            let gen_idx = GenerationalIndex {
+                idx: self.entries.len(),
+                generation: 0,
+            };
+            self.entries.push(AllocatorEntry {
+                is_live: true,
+                generation: 0,
+            });
             gen_idx
         }
     }
@@ -56,8 +66,9 @@ impl GenerationalIndexAllocator {
     }
 
     /// Returns an iterator over all live indices.
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = GenerationalIndex> + 'a {
-        self.entries.iter()
+    pub fn entries<'a>(&'a self) -> impl Iterator<Item = GenerationalIndex> + 'a {
+        self.entries
+            .iter()
             .enumerate()
             .filter(|(_, e)| e.is_live)
             .map(|(i, e)| GenerationalIndex {
@@ -65,7 +76,6 @@ impl GenerationalIndexAllocator {
                 generation: e.generation,
             })
     }
-
 }
 
 pub struct GenerationalArrayEntry<T> {
@@ -99,7 +109,7 @@ impl<T> GenerationalIndexArray<T> {
                 if e.generation > gen_idx.generation {
                     panic!("can this even happen?");
                 }
-            },
+            }
             _ => (),
         };
 
@@ -122,7 +132,7 @@ impl<T> GenerationalIndexArray<T> {
                 if e.generation > gen_idx.generation {
                     return false;
                 }
-            },
+            }
             _ => (),
         };
 
@@ -137,9 +147,7 @@ impl<T> GenerationalIndexArray<T> {
         }
 
         match self.data[gen_idx.idx] {
-            Some(ref e) => {
-                Some(e.val.borrow())
-            },
+            Some(ref e) => Some(e.val.borrow()),
             None => None,
         }
     }
@@ -150,15 +158,13 @@ impl<T> GenerationalIndexArray<T> {
         }
 
         match self.data[gen_idx.idx] {
-            Some(ref e) => {
-                Some(e.val.borrow_mut())
-            },
+            Some(ref e) => Some(e.val.borrow_mut()),
             None => None,
         }
     }
 
     pub fn has_entry(&self, gen_idx: &GenerationalIndex) -> bool {
-        return self.check_idx(gen_idx) && self.data[gen_idx.idx].is_some()
+        return self.check_idx(gen_idx) && self.data[gen_idx.idx].is_some();
     }
 
     /// Returns true if `gen_idx` points to a valid entry.  Otherwise, false.
@@ -167,7 +173,7 @@ impl<T> GenerationalIndexArray<T> {
             return false;
         }
         if let Some(ref e) = self.data[gen_idx.idx] {
-            if e.generation != gen_idx.generation  {
+            if e.generation != gen_idx.generation {
                 return false;
             }
         }

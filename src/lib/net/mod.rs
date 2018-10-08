@@ -5,7 +5,9 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 
 use enum_primitive::FromPrimitive;
 
-pub const PACKET_BUF_SIZE: usize = 1024;
+use super::ecs::Entity;
+
+pub const PACKET_BUF_SIZE: usize = 4096;
 
 // TODO: Once const functions are in stable, we should make these a SocketAddrV4.
 pub const BIND_ADDR: [u8; 4] = [127, 0, 0, 1];
@@ -24,7 +26,11 @@ pub trait Serialize {
     fn serialize(&self) -> Vec<u8> {
         let result = self.raw_data();
         if result.len() > PACKET_BUF_SIZE {
-            panic!("serialized data is too large ({} > {})", result.len(), PACKET_BUF_SIZE);
+            panic!(
+                "serialized data is too large ({} > {})",
+                result.len(),
+                PACKET_BUF_SIZE
+            );
         }
         result
     }
@@ -34,16 +40,30 @@ pub trait Deserialize {
     fn deserialize(data: &[u8]) -> Self;
 }
 
+// TODO: Make this an enum of enums (for client-only, server-only, and common packets)?
+// Or maybe they should be entirely disjoint...
 #[derive(Debug)]
 pub enum Packet {
-    Hello { name: String },
+    Hello {
+        name: String,
+    },
     HelloAck,
+    CreateEntity {
+        entity: Entity,
+    },
+    SetComponent {
+        entity: Entity,
+        comp_id: u32,
+        data: Vec<u8>,
+    },
 }
 
 enum_from_primitive! {
 pub enum PacketId {
     Hello = 0,
     HelloAck = 1,
+    CreateEntity = 2,
+    SetComponent = 3,
 }
 }
 
@@ -51,8 +71,10 @@ impl Packet {
     pub fn id(&self) -> u8 {
         use self::Packet::*;
         match *self {
-            Hello { name: _ } => PacketId::Hello as u8,
-            HelloAck {} => PacketId::HelloAck as u8,
+            Hello { .. } => PacketId::Hello as u8,
+            HelloAck { .. } => PacketId::HelloAck as u8,
+            CreateEntity { .. } => PacketId::CreateEntity as u8,
+            SetComponent { .. } => PacketId::SetComponent as u8,
         }
         // TODO: Open an issue for why we can't cast the result of the entire match to a `u8`.
     }
@@ -63,10 +85,10 @@ impl Serialize for Packet {
         use self::Packet::*;
         let mut result = vec![self.id()];
         match *self {
-            Hello {ref name} => {
-                result.append(&mut name.clone().into_bytes())
-            },
-            HelloAck {} => (),
+            Hello { ref name } => result.append(&mut name.clone().into_bytes()),
+            HelloAck { .. } => (),
+            CreateEntity { .. } => unimplemented!(),
+            SetComponent { .. } => unimplemented!(),
         }
         result
     }
@@ -83,10 +105,10 @@ impl Deserialize for Packet {
                     .expect("couldn't decode UTF-8 string")
                     .to_string();
                 Hello { name }
-            },
-            PacketId::HelloAck => {
-                HelloAck {}
-            },
+            }
+            PacketId::HelloAck => HelloAck {},
+            PacketId::CreateEntity => unimplemented!(),
+            PacketId::SetComponent => unimplemented!(),
         }
     }
 }

@@ -3,12 +3,12 @@ extern crate rand;
 use std::any::TypeId;
 
 use self::rand::{thread_rng, Rng};
-use piston::input::*;
 
-use components::{PositionComponent, RenderComponent};
-use ecs::{Ecs, Entity, EntityMap};
-use event_handler::EventHandler;
-use systems::System;
+use game::components::{PositionComponent, RenderComponent};
+use game::ecs::{Ecs, Entity, EntityMap};
+use game::systems::System;
+
+use super::TickConfig;
 
 pub const MOVE_SPEED: f64 = 500.0;
 const CHANGE_INTERVAL: u32 = 60;
@@ -50,13 +50,13 @@ impl System for RandomMobUpdateSystem {
         type_id_vec![RandomMobComponent, PositionComponent]
     }
 
-    fn run(&self, _: &EventHandler, args: &UpdateArgs, entity_map: &mut EntityMap,
+    fn run(&self, tick_config: &TickConfig, entity_map: &mut EntityMap,
            entities: &Vec<Entity>) {
         for entity in entities {
             let mut comp_map = entity_map.borrow_mut(entity).unwrap();
 
             let (dx, dy) = {
-                let rando_comp = comp_map.borrow_mut::<RandomMobComponent>();
+                let mut rando_comp = comp_map.borrow_mut::<RandomMobComponent>();
                 if rando_comp.change_cnt == 0 {
                     let mut rng = thread_rng();
                     let rand_num = rng.gen_range(0, 4);
@@ -69,7 +69,7 @@ impl System for RandomMobUpdateSystem {
                     };
                 }
 
-                let ms_dt = MOVE_SPEED * args.dt;
+                let ms_dt = MOVE_SPEED * tick_config.dt;
                 let mut dx = 0.0f64;
                 let mut dy = 0.0f64;
                 match rando_comp.curr_dir {

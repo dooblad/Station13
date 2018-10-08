@@ -1,9 +1,8 @@
 use std::fmt::Debug;
-use std::io::Result;
 use std::net::SocketAddrV4;
 
-use game::net::*;
 use game::net::socket::GameSocket;
+use game::net::*;
 
 pub struct Client {
     pub socket: GameSocket,
@@ -21,10 +20,10 @@ impl Client {
     pub fn tick(&mut self) {
         for (packet, _) in self.socket.poll().iter() {
             match packet {
-                Packet::Hello { name: _ } => eprintln!("received Hello from server"),
-                Packet::HelloAck {} => {
-                    println!("received {:?}", packet);
-                },
+                Packet::Hello { .. } => eprintln!("received Hello from server"),
+                Packet::HelloAck { .. } => println!("received {:?}", packet),
+                Packet::CreateEntity { .. } => println!("received {:?}", packet),
+                Packet::SetComponent { .. } => println!("received {:?}", packet),
             };
         }
     }

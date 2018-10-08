@@ -6,6 +6,7 @@
 /// ```
 ///
 /// Credit goes to "AndyBaron/rustic-ecs" on Github for this one.
+#[macro_export]
 macro_rules! type_id_vec {
     ($($x:ty),*) => (
         vec![$(TypeId::of::<$x>()),*]
@@ -22,6 +23,7 @@ macro_rules! type_id_vec {
 ///     RandomMobUpdateSystem,
 /// ];
 /// ```
+#[macro_export]
 macro_rules! sys_vec {
     ($($x:ident),*) => (
         vec![$(Box::new($x {})),*]

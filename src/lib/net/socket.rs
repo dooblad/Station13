@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::io;
 use std::io::Result;
-use std::net::{UdpSocket, SocketAddr, SocketAddrV4};
+use std::net::{SocketAddr, SocketAddrV4, UdpSocket};
 
 use super::*;
 
@@ -13,8 +13,7 @@ pub struct GameSocket {
 impl GameSocket {
     // TODO: Switch to IPv6 everything.
     pub fn new(bind_addr: SocketAddrV4) -> Self {
-        let socket = UdpSocket::bind(bind_addr).expect(
-            &format!("couldn't bind to {}", bind_addr));
+        let socket = UdpSocket::bind(bind_addr).expect(&format!("couldn't bind to {}", bind_addr));
         // We don't want to wait indefinitely for incoming requests.  Rather, we want to peek
         // during every tick.
         socket.set_nonblocking(true).unwrap();

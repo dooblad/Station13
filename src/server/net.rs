@@ -1,9 +1,7 @@
-use std::io::Result;
 use std::net::SocketAddrV4;
 
-use game::ecs::Ecs;
-use game::net::*;
 use game::net::socket::GameSocket;
+use game::net::*;
 
 pub struct Server {
     socket: GameSocket,
@@ -26,11 +24,15 @@ impl Server {
                     self.clients.push(src.clone());
                     // TODO: Decide client ID.
                     self.socket.send_to(Packet::HelloAck {}, &src);
-                },
-                Packet::HelloAck {} => eprintln!("received HelloAck from client"),
+                }
+                Packet::HelloAck { .. } => eprintln!("received HelloAck from client"),
+                Packet::CreateEntity { .. } => eprintln!("received CreateEntity from client"),
+                Packet::SetComponent { .. } => eprintln!("received SetComponent from client"),
             };
         }
     }
 
-    pub fn socket(&self) -> &GameSocket { &self.socket }
+    pub fn socket(&self) -> &GameSocket {
+        &self.socket
+    }
 }

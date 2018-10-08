@@ -4,12 +4,12 @@ use std::collections::HashMap;
 use piston::input::*;
 
 use components::{PositionComponent, RenderComponent};
+use ecs::{Ecs, Entity, EntityMap};
 use event_handler::EventHandler;
-use ecs::{Entity, EntityMap, Ecs};
 use systems::System;
 
 pub const MOVE_SPEED: f64 = 500.0;
-pub const COLOR: [f32; 4] = [0.7, 0.3, 0.3, 1.0];  // Red
+pub const COLOR: [f32; 4] = [0.7, 0.3, 0.3, 1.0]; // Red
 pub const SIZE: f64 = 50.0;
 
 #[derive(PartialEq, Eq, Hash)]
@@ -40,7 +40,7 @@ pub struct PlayerComponent {
     control_scheme: ControlScheme,
 }
 
-pub fn new(control_scheme: ControlScheme, level: &mut Ecs) -> Entity {
+pub fn new<T>(control_scheme: ControlScheme, level: &mut Ecs<T>) -> Entity {
     let result = level.create_entity();
     let mut comp_map = level.entity_map.borrow_mut(&result).unwrap();
     comp_map.set(PositionComponent { x: 0.0, y: 0.0 });
@@ -52,6 +52,7 @@ pub fn new(control_scheme: ControlScheme, level: &mut Ecs) -> Entity {
     result
 }
 
+/*
 pub struct PlayerUpdateSystem;
 
 impl System for PlayerUpdateSystem {
@@ -90,3 +91,4 @@ impl System for PlayerUpdateSystem {
         }
     }
 }
+*/
