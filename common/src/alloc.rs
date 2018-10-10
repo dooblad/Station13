@@ -2,13 +2,13 @@ use std::cell::{Ref, RefCell, RefMut};
 
 #[derive(Debug)]
 pub struct GenerationalIndex {
-    idx: usize,
-    generation: u64,
+    pub idx: usize,
+    pub gen: u64,
 }
 
 struct AllocatorEntry {
     is_live: bool,
-    generation: u64,
+    gen: u64,
 }
 
 pub struct GenerationalIndexAllocator {
@@ -29,21 +29,21 @@ impl GenerationalIndexAllocator {
             // Use item from the free list.
             let mut entry = &mut self.entries[e_idx];
             entry.is_live = true;
-            entry.generation += 1;
+            entry.gen += 1;
             let gen_idx = GenerationalIndex {
                 idx: e_idx,
-                generation: entry.generation,
+                gen: entry.gen,
             };
             gen_idx
         } else {
             // No free entries.  Allocate new one.
             let gen_idx = GenerationalIndex {
                 idx: self.entries.len(),
-                generation: 0,
+                gen: 0,
             };
             self.entries.push(AllocatorEntry {
                 is_live: true,
-                generation: 0,
+                gen: 0,
             });
             gen_idx
         }
@@ -62,7 +62,7 @@ impl GenerationalIndexAllocator {
 
     pub fn is_live(&self, gen_idx: &GenerationalIndex) -> bool {
         let entry = &self.entries[gen_idx.idx];
-        entry.is_live && entry.generation == gen_idx.generation
+        entry.is_live && entry.gen == gen_idx.gen
     }
 
     /// Returns an iterator over all live indices.
@@ -71,10 +71,7 @@ impl GenerationalIndexAllocator {
             .iter()
             .enumerate()
             .filter(|(_, e)| e.is_live)
-            .map(|(i, e)| GenerationalIndex {
-                idx: i,
-                generation: e.generation,
-            })
+            .map(|(i, e)| GenerationalIndex { idx: i, gen: e.gen })
     }
 }
 
@@ -106,7 +103,7 @@ impl<T> GenerationalIndexArray<T> {
         match self.data[gen_idx.idx] {
             Some(ref e) => {
                 // Don't allow old generations to overwrite new generations.
-                if e.generation > gen_idx.generation {
+                if e.generation > gen_idx.gen {
                     panic!("can this even happen?");
                 }
             }
@@ -115,7 +112,7 @@ impl<T> GenerationalIndexArray<T> {
 
         self.data[gen_idx.idx] = Some(GenerationalArrayEntry {
             val: RefCell::new(val),
-            generation: gen_idx.generation,
+            generation: gen_idx.gen,
         });
         true
     }
@@ -129,7 +126,7 @@ impl<T> GenerationalIndexArray<T> {
 
         match self.data[gen_idx.idx] {
             Some(ref e) => {
-                if e.generation > gen_idx.generation {
+                if e.generation > gen_idx.gen {
                     return false;
                 }
             }
@@ -173,7 +170,7 @@ impl<T> GenerationalIndexArray<T> {
             return false;
         }
         if let Some(ref e) = self.data[gen_idx.idx] {
-            if e.generation != gen_idx.generation {
+            if e.generation != gen_idx.gen {
                 return false;
             }
         }

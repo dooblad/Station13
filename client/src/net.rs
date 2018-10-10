@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 use std::net::SocketAddrV4;
 
-use game::net::socket::GameSocket;
-use game::net::*;
+use common::net::socket::GameSocket;
+use common::net::*;
 
 pub struct Client {
     pub socket: GameSocket,

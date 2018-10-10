@@ -5,7 +5,8 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 
 use enum_primitive::FromPrimitive;
 
-use super::ecs::Entity;
+use crate::alloc::GenerationalIndex;
+use crate::ecs::Entity;
 
 pub const PACKET_BUF_SIZE: usize = 4096;
 
@@ -87,7 +88,10 @@ impl Serialize for Packet {
         match *self {
             Hello { ref name } => result.append(&mut name.clone().into_bytes()),
             HelloAck { .. } => (),
-            CreateEntity { .. } => unimplemented!(),
+            CreateEntity { ref entity } => {
+                result.append(&mut (entity.idx as u64).raw_data());
+                result.append(&mut (entity.gen as u64).raw_data());
+            }
             SetComponent { .. } => unimplemented!(),
         }
         result
@@ -107,8 +111,36 @@ impl Deserialize for Packet {
                 Hello { name }
             }
             PacketId::HelloAck => HelloAck {},
-            PacketId::CreateEntity => unimplemented!(),
+            PacketId::CreateEntity => {
+                let idx = <u64>::deserialize(&rest[0..8]) as usize;
+                let gen = <u64>::deserialize(&rest[8..16]);
+                println!("idx: {}, gen: {}", idx, gen);
+                CreateEntity {
+                    entity: GenerationalIndex { idx, gen },
+                }
+            }
             PacketId::SetComponent => unimplemented!(),
         }
+    }
+}
+
+impl Serialize for u64 {
+    fn raw_data(&self) -> Vec<u8> {
+        let mut result = Vec::with_capacity(8);
+        for shift in (0..8).map(|v| v * 8).rev() {
+            result.push(((*self >> shift) & 0xff) as u8);
+        }
+        result
+    }
+}
+
+impl Deserialize for u64 {
+    fn deserialize(data: &[u8]) -> Self {
+        let mut result = 0u64;
+        let shift_iter = (0..8).map(|v| v * 8).rev();
+        for (byte, shift) in data.iter().zip(shift_iter) {
+            result += (*byte as u64) << shift;
+        }
+        result
     }
 }

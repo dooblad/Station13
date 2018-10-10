@@ -5,10 +5,10 @@ use std::any::TypeId;
 use self::rand::{thread_rng, Rng};
 use piston::input::*;
 
-use components::{PositionComponent, RenderComponent};
-use ecs::{Ecs, Entity, EntityMap};
-use event_handler::EventHandler;
-use systems::System;
+use crate::components::{PositionComponent, RenderComponent};
+use crate::ecs::{Ecs, Entity, EntityMap};
+use crate::event_handler::EventHandler;
+use crate::systems::System;
 
 pub const MOVE_SPEED: f64 = 500.0;
 const CHANGE_INTERVAL: u32 = 60;

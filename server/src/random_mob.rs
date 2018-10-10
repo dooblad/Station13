@@ -4,9 +4,9 @@ use std::any::TypeId;
 
 use self::rand::{thread_rng, Rng};
 
-use game::components::{PositionComponent, RenderComponent};
-use game::ecs::{Ecs, Entity, EntityMap};
-use game::systems::System;
+use common::components::{PositionComponent, RenderComponent};
+use common::ecs::{Ecs, Entity, EntityMap};
+use common::systems::System;
 
 use super::TickConfig;
 
@@ -42,16 +42,14 @@ pub fn new<T>(level: &mut Ecs<T>) -> Entity {
     result
 }
 
-/*
 pub struct RandomMobUpdateSystem;
 
-impl System for RandomMobUpdateSystem {
+impl System<TickConfig> for RandomMobUpdateSystem {
     fn comp_constraints(&self) -> Vec<TypeId> {
         type_id_vec![RandomMobComponent, PositionComponent]
     }
 
-    fn run(&self, tick_config: &TickConfig, entity_map: &mut EntityMap,
-           entities: &Vec<Entity>) {
+    fn run(&self, tick_config: &TickConfig, entity_map: &mut EntityMap, entities: &Vec<Entity>) {
         for entity in entities {
             let mut comp_map = entity_map.borrow_mut(entity).unwrap();
 
@@ -89,4 +87,3 @@ impl System for RandomMobUpdateSystem {
         }
     }
 }
-*/

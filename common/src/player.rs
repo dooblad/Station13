@@ -3,10 +3,10 @@ use std::collections::HashMap;
 
 use piston::input::*;
 
-use components::{PositionComponent, RenderComponent};
-use ecs::{Ecs, Entity, EntityMap};
-use event_handler::EventHandler;
-use systems::System;
+use crate::components::{PositionComponent, RenderComponent};
+use crate::ecs::{Ecs, Entity, EntityMap};
+use crate::event_handler::EventHandler;
+use crate::systems::System;
 
 pub const MOVE_SPEED: f64 = 500.0;
 pub const COLOR: [f32; 4] = [0.7, 0.3, 0.3, 1.0]; // Red

@@ -1,24 +1,30 @@
-[package]
-name = "station13"
-version = "0.1.0"
-authors = ["doobs"]
+#[package]
+#name = "station13_workspace"
+#version = "0.1.0"
+#authors = ["doobs"]
+#
+#[[bin]]
+#name = "client"
+#path = "src/client/main.rs"
+#
+#[[bin]]
+#name = "server"
+#path = "src/server/main.rs"
+#
+#[dependencies]
+#enum_primitive = "0.1.1"
+#piston = "0.37.0"
+#piston2d-graphics = "0.26.0"
+#piston2d-opengl_graphics = "0.53.0"
+#pistoncore-glutin_window = "0.47.0"
+#rand = "0.5.5"
+#
+#game = { path = "src/lib/game" }
 
-[lib]
-name = "game"
-path = "src/lib/lib.rs"
-
-[[bin]]
-name = "client"
-path = "src/client/main.rs"
-
-[[bin]]
-name = "server"
-path = "src/server/main.rs"
-
-[dependencies]
-enum_primitive = "0.1.1"
-piston = "0.37.0"
-piston2d-graphics = "0.26.0"
-piston2d-opengl_graphics = "0.53.0"
-pistoncore-glutin_window = "0.47.0"
-rand = "0.5.5"
+[workspace]
+members = [
+    "common",
+    "client",
+    "server",
+    #"component_id_derive",
+]

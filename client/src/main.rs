@@ -4,7 +4,7 @@ extern crate opengl_graphics;
 extern crate piston;
 
 #[macro_use]
-extern crate game;
+extern crate common;
 
 pub mod net;
 pub mod render;
@@ -15,12 +15,12 @@ use piston::event_loop::*;
 use piston::input::*;
 use piston::window::WindowSettings;
 
-use game::ecs::Ecs;
-use game::event_handler::EventHandler;
-use game::net::*;
+use common::ecs::Ecs;
+use common::event_handler::EventHandler;
+use common::net::*;
 
-use net::Client;
-use render::Renderer;
+use self::net::Client;
+use self::render::Renderer;
 
 pub const WINDOW_TITLE: &'static str = "Station 13";
 pub const WINDOW_DIMS: [u32; 2] = [800, 600];

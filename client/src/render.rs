@@ -4,8 +4,8 @@ use graphics::Context;
 use opengl_graphics::GlGraphics;
 use piston::input::RenderArgs;
 
-use game::components::{PositionComponent, RenderComponent};
-use game::ecs::{Ecs, Entity, EntityMap};
+use common::components::{PositionComponent, RenderComponent};
+use common::ecs::{Ecs, Entity, EntityMap};
 
 pub struct Renderer;
 
