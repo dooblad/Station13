@@ -5,6 +5,10 @@ extern crate graphics;
 extern crate opengl_graphics;
 extern crate piston;
 
+extern crate uniq_comp_id;
+#[macro_use]
+extern crate uniq_comp_id_derive;
+
 // Load all macros before other modules, because of how macro scoping works.
 #[macro_use]
 pub mod macros;

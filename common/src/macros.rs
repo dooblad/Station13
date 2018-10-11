@@ -1,7 +1,7 @@
 /// Makes it more ergonomic to define which components a system requires.
 ///
 /// Example:
-/// ```
+/// ```ignore
 /// let filter = type_id_vec!(PositionComponent, HealthComponent);
 /// ```
 ///
@@ -17,7 +17,7 @@ macro_rules! type_id_vec {
 /// For defining a list of boxed systems by name.
 ///
 /// Example:
-/// ```
+/// ```ignore
 /// let systems = sys_vec![
 ///     PlayerUpdateSystem,
 ///     RandomMobUpdateSystem,

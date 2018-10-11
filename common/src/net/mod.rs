@@ -5,8 +5,8 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 
 use enum_primitive::FromPrimitive;
 
-use crate::alloc::GenerationalIndex;
-use crate::ecs::Entity;
+use super::alloc::GenerationalIndex;
+use super::ecs::Entity;
 
 pub const PACKET_BUF_SIZE: usize = 4096;
 

@@ -1,0 +1,5 @@
+[package]
+name = "uniq_comp_id"
+version = "0.1.0"
+authors = ["doobs"]
+edition = "2018"

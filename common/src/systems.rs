@@ -4,9 +4,9 @@ use graphics::Context;
 use opengl_graphics::GlGraphics;
 use piston::input::{RenderArgs, UpdateArgs};
 
-use crate::components::{PositionComponent, RenderComponent};
-use crate::ecs::{Entity, EntityMap};
-use crate::event_handler::EventHandler;
+use super::components::{PositionComponent, RenderComponent};
+use super::ecs::{Entity, EntityMap};
+use super::event_handler::EventHandler;
 
 pub trait System<T> {
     fn comp_constraints(&self) -> Vec<TypeId>;

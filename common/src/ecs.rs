@@ -3,8 +3,8 @@ use std::collections::HashMap;
 
 use opengl_graphics::GlGraphics;
 
-use crate::alloc::{GenerationalIndex, GenerationalIndexAllocator, GenerationalIndexArray};
-use crate::systems::System;
+use super::alloc::{GenerationalIndex, GenerationalIndexAllocator, GenerationalIndexArray};
+use super::systems::System;
 
 pub const LEVEL_WIDTH: usize = 32;
 pub const LEVEL_HEIGHT: usize = 32;

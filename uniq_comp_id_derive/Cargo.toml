@@ -1,0 +1,14 @@
+[package]
+name = "uniq_comp_id_derive"
+version = "0.1.0"
+authors = ["doobs"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "0.6.8"
+syn = "0.15.9"
+
+uniq_comp_id = { path = "../uniq_comp_id" }
