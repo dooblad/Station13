@@ -5,8 +5,8 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 
 use enum_primitive::FromPrimitive;
 
-use super::alloc::GenerationalIndex;
-use super::ecs::Entity;
+use crate::ecs::Entity;
+use crate::alloc::GenerationalIndex;
 
 pub const PACKET_BUF_SIZE: usize = 4096;
 
@@ -41,8 +41,6 @@ pub trait Deserialize {
     fn deserialize(data: &[u8]) -> Self;
 }
 
-// TODO: Make this an enum of enums (for client-only, server-only, and common packets)?
-// Or maybe they should be entirely disjoint...
 #[derive(Debug)]
 pub enum Packet {
     Hello {
@@ -58,6 +56,48 @@ pub enum Packet {
         data: Vec<u8>,
     },
 }
+
+/*
+// TODO: Make this an enum of enums (for client-only, server-only, and common packets)?
+// Or maybe they should be entirely disjoint...
+// One thing you'll need to worry about if you separate the definitions of packets across crates is
+// that the UniqId proc macro might reset its state between crates, so the assigned IDs will overlap.
+mod packet {
+    use crate::ecs::Entity;
+
+    #[derive(Debug, UniqId)]
+    #[UniqGroup = "packet"]
+    struct Hello {
+        name: String,
+    }
+
+    #[derive(Debug, UniqId)]
+    #[UniqGroup = "packet"]
+    struct HelloAck;
+
+    #[derive(Debug, UniqId)]
+    #[UniqGroup = "packet"]
+    struct CreateEntity {
+        entity: Entity,
+    }
+
+    #[derive(Debug, UniqId)]
+    #[UniqGroup = "packet"]
+    struct SetComponent {
+        entity: Entity,
+        comp_id: u32,
+        data: Vec<u8>,
+    }
+
+    #[derive(Debug)]
+    pub enum Packet {
+        Hello(Hello),
+        HelloAck(HelloAck),
+        CreateEntity(CreateEntity),
+        SetComponent(SetComponent),
+    }
+}
+*/
 
 enum_from_primitive! {
 pub enum PacketId {

@@ -22,6 +22,8 @@ enum Dir {
     Right,
 }
 
+#[derive(UniqId)]
+#[UniqGroup = "comp"]
 pub struct RandomMobComponent {
     change_cnt: u32,
     curr_dir: Dir,

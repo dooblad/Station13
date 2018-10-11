@@ -36,6 +36,8 @@ impl ControlScheme {
     }
 }
 
+#[derive(UniqId)]
+#[UniqGroup = "comp"]
 pub struct PlayerComponent {
     control_scheme: ControlScheme,
 }

@@ -3,6 +3,6 @@ members = [
     "common",
     "client",
     "server",
-    "uniq_comp_id",
-    "uniq_comp_id_derive",
+    "uniq_id",
+    "uniq_id_derive",
 ]
