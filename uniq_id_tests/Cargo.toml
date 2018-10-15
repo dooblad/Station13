@@ -1,0 +1,9 @@
+[package]
+name = "uniq_id_tests"
+version = "0.1.0"
+authors = ["doobs"]
+edition = "2018"
+
+[dependencies]
+uniq_id = { path = "../uniq_id" }
+uniq_id_derive = { path = "../uniq_id_derive" }

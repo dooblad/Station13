@@ -3,7 +3,12 @@ use std::io;
 use std::io::Result;
 use std::net::{SocketAddr, SocketAddrV4, UdpSocket};
 
+use uniq_id::UniqId;
+
 use super::*;
+use super::packet::*;
+
+pub const PACKET_BUF_SIZE: usize = 4096;
 
 pub struct GameSocket {
     socket: UdpSocket,
@@ -45,13 +50,19 @@ impl GameSocket {
         result
     }
 
-    pub fn send_to<S: Serialize + Debug>(&mut self, data: S, dest: &SocketAddrV4) {
-        self.send_bytes_to(data.serialize(), dest)
-            .expect(&format!("failed to send {:?}", data));
-    }
-
-    fn send_bytes_to(&mut self, data: Vec<u8>, dest: &SocketAddrV4) -> Result<()> {
-        self.socket.send_to(&data, dest)?;
-        Ok(())
+    pub fn send_to<S: Serialize + UniqId + Debug>(&mut self, data: S, dest: &SocketAddrV4) {
+        //let bytes = {
+        //    let mut bytes = vec![<S as UniqId>::id()];
+        //    bytes.append(data.serialize());
+        //    bytes
+        //};
+        //if bytes.len() > PACKET_BUF_SIZE {
+        //    panic!(
+        //        "serialized packet is too large ({} > {})",
+        //        bytes.len(),
+        //        PACKET_BUF_SIZE
+        //    );
+        //}
+        //self.socket.send_to(bytes, dest).expect(&format!("failed to send {:?}", data));
     }
 }

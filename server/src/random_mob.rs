@@ -54,7 +54,7 @@ impl System<TickConfig> for RandomMobUpdateSystem {
             let mut comp_map = entity_map.borrow_mut(entity).unwrap();
 
             let (dx, dy) = {
-                let mut rando_comp = comp_map.borrow_mut::<RandomMobComponent>();
+                let rando_comp = comp_map.borrow_mut::<RandomMobComponent>();
                 if rando_comp.change_cnt == 0 {
                     let mut rng = thread_rng();
                     let rand_num = rng.gen_range(0, 4);

@@ -28,8 +28,8 @@ pub const WINDOW_DIMS: [u32; 2] = [800, 600];
 pub const USERNAME: &'static str = "Doobs";
 
 pub struct TickConfig {
-    event_handler: EventHandler,
-    dt: f64,
+    //event_handler: EventHandler,
+    //dt: f64,
 }
 
 pub struct Game {
@@ -83,11 +83,11 @@ fn main() {
     while let Some(e) = events.next(&mut window) {
         event_handler.tick(&e);
 
-        if let Some(u) = e.update_args() {
+        if let Some(_u) = e.update_args() {
             game.tick(TickConfig {
                 // TODO: Cloning here is hella inefficient.
-                event_handler: event_handler.clone(),
-                dt: u.dt,
+                //event_handler: event_handler.clone(),
+                //dt: u.dt,
             });
         }
 

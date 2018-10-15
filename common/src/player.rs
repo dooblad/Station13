@@ -1,12 +1,10 @@
-use std::any::TypeId;
 use std::collections::HashMap;
 
 use piston::input::*;
 
 use super::components::{PositionComponent, RenderComponent};
-use super::ecs::{Ecs, Entity, EntityMap};
+use super::ecs::{Ecs, Entity};
 use super::event_handler::EventHandler;
-use super::systems::System;
 
 pub const MOVE_SPEED: f64 = 500.0;
 pub const COLOR: [f32; 4] = [0.7, 0.3, 0.3, 1.0]; // Red

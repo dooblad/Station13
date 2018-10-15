@@ -1,8 +1,6 @@
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
 
-use opengl_graphics::GlGraphics;
-
 use super::alloc::{GenerationalIndex, GenerationalIndexAllocator, GenerationalIndexArray};
 use super::systems::System;
 

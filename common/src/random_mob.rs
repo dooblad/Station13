@@ -1,8 +1,5 @@
 extern crate rand;
 
-use std::any::TypeId;
-
-use self::rand::{thread_rng, Rng};
 use piston::input::*;
 
 use super::components::{PositionComponent, RenderComponent};

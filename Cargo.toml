@@ -5,4 +5,5 @@ members = [
     "server",
     "uniq_id",
     "uniq_id_derive",
+    "uniq_id_tests",
 ]

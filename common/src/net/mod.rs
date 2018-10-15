@@ -5,10 +5,10 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 
 use enum_primitive::FromPrimitive;
 
+use uniq_id::serde::{Serialize, Deserialize};
+
 use crate::ecs::Entity;
 use crate::alloc::GenerationalIndex;
-
-pub const PACKET_BUF_SIZE: usize = 4096;
 
 // TODO: Once const functions are in stable, we should make these a SocketAddrV4.
 pub const BIND_ADDR: [u8; 4] = [127, 0, 0, 1];
@@ -19,28 +19,7 @@ pub fn to_socket_addr(addr: [u8; 4], port: u16) -> SocketAddrV4 {
     SocketAddrV4::new(Ipv4Addr::from(addr), port)
 }
 
-pub trait Serialize {
-    // This method should only be implemented by types that are serializable, but never used.
-    // `serialize` is the only method that should be used.
-    fn raw_data(&self) -> Vec<u8>;
-    // Serializes the type and ensures the resulting bytes are small enough to fit within a packet.
-    fn serialize(&self) -> Vec<u8> {
-        let result = self.raw_data();
-        if result.len() > PACKET_BUF_SIZE {
-            panic!(
-                "serialized data is too large ({} > {})",
-                result.len(),
-                PACKET_BUF_SIZE
-            );
-        }
-        result
-    }
-}
-
-pub trait Deserialize {
-    fn deserialize(data: &[u8]) -> Self;
-}
-
+/*
 #[derive(Debug)]
 pub enum Packet {
     Hello {
@@ -56,8 +35,8 @@ pub enum Packet {
         data: Vec<u8>,
     },
 }
+*/
 
-/*
 // TODO: Make this an enum of enums (for client-only, server-only, and common packets)?
 // Or maybe they should be entirely disjoint...
 // One thing you'll need to worry about if you separate the definitions of packets across crates is
@@ -97,8 +76,8 @@ mod packet {
         SetComponent(SetComponent),
     }
 }
-*/
 
+/*
 enum_from_primitive! {
 pub enum PacketId {
     Hello = 0,
@@ -122,15 +101,15 @@ impl Packet {
 }
 
 impl Serialize for Packet {
-    fn raw_data(&self) -> Vec<u8> {
+    fn serialize(&self) -> Vec<u8> {
         use self::Packet::*;
         let mut result = vec![self.id()];
         match *self {
             Hello { ref name } => result.append(&mut name.clone().into_bytes()),
             HelloAck { .. } => (),
             CreateEntity { ref entity } => {
-                result.append(&mut (entity.idx as u64).raw_data());
-                result.append(&mut (entity.gen as u64).raw_data());
+                result.append(&mut (entity.idx as u64).serialize());
+                result.append(&mut (entity.gen as u64).serialize());
             }
             SetComponent { .. } => unimplemented!(),
         }
@@ -163,24 +142,5 @@ impl Deserialize for Packet {
         }
     }
 }
+*/
 
-impl Serialize for u64 {
-    fn raw_data(&self) -> Vec<u8> {
-        let mut result = Vec::with_capacity(8);
-        for shift in (0..8).map(|v| v * 8).rev() {
-            result.push(((*self >> shift) & 0xff) as u8);
-        }
-        result
-    }
-}
-
-impl Deserialize for u64 {
-    fn deserialize(data: &[u8]) -> Self {
-        let mut result = 0u64;
-        let shift_iter = (0..8).map(|v| v * 8).rev();
-        for (byte, shift) in data.iter().zip(shift_iter) {
-            result += (*byte as u64) << shift;
-        }
-        result
-    }
-}

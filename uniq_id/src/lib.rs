@@ -1,3 +1,5 @@
+pub mod serde;
+
 /// Data type used to represent unique IDs.
 pub type Id = u8;
 
