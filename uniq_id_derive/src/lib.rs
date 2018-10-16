@@ -33,10 +33,8 @@ pub fn uniq_id_derive(input: TokenStream) -> TokenStream {
 
     // Add `UniqId` implementation.
     let uniq_id_impl = impl_uniq_id_trait(&ast);
-    // Add `Serialize` implementation.
-    let serialize_impl = impl_serialize_trait(&ast);
-    // Add `Deserialize` implementation.
-    let deserialize_impl = impl_deserialize_trait(&ast);
+    // Add `Serialize` and `Deserialize` implementation.
+    let serde_impls = impl_serde_traits(&ast);
 
     // In order to get all of the necessary imports, without making the user import them, we put
     // all of our code and imports into a const block.  That way, we don't interfere with existing
@@ -46,19 +44,15 @@ pub fn uniq_id_derive(input: TokenStream) -> TokenStream {
     let result = quote! {
         // TODO: Can we fukn pls just use `_` here?
         pub const #block_name: () = {
-            use ::uniq_id::serde::{Serialize, Deserialize};
             #uniq_id_impl
-            #serialize_impl
-            #deserialize_impl
+            #serde_impls
         };
     };
-
-    //println!("Output AST:");
-    //println!("{}\n", result);
 
     result.into()
 }
 
+/// Generates an implementation for the `UniqId` trait.
 fn impl_uniq_id_trait(ast: &syn::DeriveInput) -> QuoteTokenStream {
     ID_COUNTER_MAP.with(|cnt_map| {
         let uniq_group = parse_group_attr(&ast.attrs);
@@ -86,116 +80,75 @@ fn impl_uniq_id_trait(ast: &syn::DeriveInput) -> QuoteTokenStream {
     })
 }
 
-// TODO: Combine serialize and deserialize methods.  They both have similar structure.
-fn impl_serialize_trait(ast: &syn::DeriveInput) -> QuoteTokenStream {
+/// Generates implementations for the `Serialize` and `Deserialize` traits.
+fn impl_serde_traits(ast: &syn::DeriveInput) -> QuoteTokenStream {
    let data_struct = match ast.data {
         Struct(ref ds) => ds,
         _ => panic!("macro only runnable on structs"),
     };
 
-    let method_body = {
-        let mut method_body = quote! {};
-        for field in data_struct.fields.iter() {
-            let ident = field.ident.clone().unwrap();
-            match field.ty {
-                Slice(ref s) => panic!("slice types not allowed in struct def"),
-                Array(ref a) => {
-                    // TODO: Consolidate with `Path` case.
-                    let stmt = quote! {
-                        result.append(&mut self.#ident.serialize());
-                    };
-                    method_body.extend(stmt);
-                },
-                Ptr(ref p) => panic!("pointer types not allowed in struct def"),
-                Reference(ref r) => panic!("reference types not allowed in struct def"),
-                BareFn(ref bf) => panic!("bare function types not allowed in struct def"),
-                Never(ref n) => panic!("never types not allowed in struct def"),
-                Tuple(ref t) => panic!("parenthesized types not allowed in struct def"),
-                Path(ref p) => {
-                    let stmt = quote! {
-                        result.append(&mut self.#ident.serialize());
-                    };
-                    method_body.extend(stmt);
-                },
-                TraitObject(ref to) => panic!("dyn trait objects not allowed in struct def"),
-                ImplTrait(ref it) => panic!("impl trait objects not allowed in struct def"),
-                Paren(ref p) => panic!("parenthesized types not allowed in struct def"),
-                Group(ref g) => println!("type groups not allowed in struct def"),
-                Infer(ref i) => println!("underscore types not allowed in struct def"),
-                Macro(ref m) => println!("macro types not allowed in struct def"),
-                Verbatim(ref v) => println!("verbatim types not allowed in struct def"),
-            };
-        }
-        method_body
-    };
+    // Iterate through struct fields and build method bodies.
+    let mut ser_body = quote! {};
+    let mut deser_body = quote! {};
+    let mut req_bytes_body = quote! {};
+    for field in data_struct.fields.iter() {
+        let ident = field.ident.clone().unwrap();
+        match field.ty {
+            Slice(ref s) => panic!("slice types not allowed in struct def"),
+            Array(ref a) => {
+                ser_body.extend(quote! {
+                    result.append(&mut self.#ident.serialize());
+                });
+                let arr_len = &a.len;
+                let elem_ty = &(*a.elem);
+                deser_body.extend(quote! {
+                    let stride = <[#elem_ty; #arr_len]>::required_bytes();
+                    result.#ident = <[#elem_ty; #arr_len]>::deserialize(&data[offs..offs+stride]);
+                    offs += stride;
+                });
+                req_bytes_body.extend(quote! {
+                    result += <[#elem_ty; #arr_len]>::required_bytes();
+                });
+            },
+            Ptr(ref p) => panic!("pointer types not allowed in struct def"),
+            Reference(ref r) => panic!("reference types not allowed in struct def"),
+            BareFn(ref bf) => panic!("bare function types not allowed in struct def"),
+            Never(ref n) => panic!("never types not allowed in struct def"),
+            Tuple(ref t) => panic!("tuple types not allowed in struct def"),
+            Path(ref p) => {
+                ser_body.extend(quote! {
+                    result.append(&mut self.#ident.serialize());
+                });
+                deser_body.extend(quote! {
+                    let stride = <#p>::required_bytes();
+                    result.#ident = <#p>::deserialize(&data[offs..offs+stride]);
+                    offs += stride;
+                });
+                req_bytes_body.extend(quote! {
+                    result += <#p>::required_bytes();
+                });
+            },
+            TraitObject(ref to) => panic!("dyn trait objects not allowed in struct def"),
+            ImplTrait(ref it) => panic!("impl trait objects not allowed in struct def"),
+            Paren(ref p) => panic!("parenthesized types not allowed in struct def"),
+            Group(ref g) => println!("type groups not allowed in struct def"),
+            Infer(ref i) => println!("underscore types not allowed in struct def"),
+            Macro(ref m) => println!("macro types not allowed in struct def"),
+            Verbatim(ref v) => println!("verbatim types not allowed in struct def"),
+        };
+    }
 
+    // Generate trait implementations.
     let type_name = &ast.ident;
     quote! {
         impl ::uniq_id::serde::Serialize for #type_name {
             fn serialize(&self) -> ::std::vec::Vec<u8> {
                 let mut result: Vec<u8> = Vec::new();
-                #method_body
+                #ser_body
                 result
             }
         }
-    }
-}
 
-fn impl_deserialize_trait(ast: &syn::DeriveInput) -> QuoteTokenStream {
-    let data_struct = match ast.data {
-        Struct(ref ds) => ds,
-        _ => panic!("macro only runnable on structs"),
-    };
-
-    let (deser_body, req_bytes_body) = {
-        // TODO: Populate `num_bytes` in the relevant cases!
-        let mut req_bytes_body = quote! {};
-        let mut deser_body = quote! {};
-        for field in data_struct.fields.iter() {
-            let ident = field.ident.clone().unwrap();
-            match field.ty {
-                Slice(ref s) => panic!("slice types not allowed in struct def"),
-                Array(ref a) => {
-                    let arr_len = &a.len;
-                    let elem_ty = &(*a.elem);
-                    deser_body.extend(quote! {
-                        let stride = <[#elem_ty; #arr_len]>::required_bytes();
-                        result.#ident = <[#elem_ty; #arr_len]>::deserialize(&data[offs..offs+stride]);
-                        offs += stride;
-                    });
-                    req_bytes_body.extend(quote! {
-                        result += <[#elem_ty; #arr_len]>::required_bytes();
-                    });
-                },
-                Ptr(ref p) => panic!("pointer types not allowed in struct def"),
-                Reference(ref r) => panic!("reference types not allowed in struct def"),
-                BareFn(ref bf) => panic!("bare function types not allowed in struct def"),
-                Never(ref n) => panic!("never types not allowed in struct def"),
-                Tuple(ref t) => panic!("parenthesized types not allowed in struct def"),
-                Path(ref p) => {
-                    deser_body.extend(quote! {
-                        let stride = <#p>::required_bytes();
-                        result.#ident = <#p>::deserialize(&data[offs..offs+stride]);
-                        offs += stride;
-                    });
-                    req_bytes_body.extend(quote! {
-                        result += <#p>::required_bytes();
-                    });
-                },
-                TraitObject(ref to) => panic!("dyn trait objects not allowed in struct def"),
-                ImplTrait(ref it) => panic!("impl trait objects not allowed in struct def"),
-                Paren(ref p) => panic!("parenthesized types not allowed in struct def"),
-                Group(ref g) => println!("type groups not allowed in struct def"),
-                Infer(ref i) => println!("underscore types not allowed in struct def"),
-                Macro(ref m) => println!("macro types not allowed in struct def"),
-                Verbatim(ref v) => println!("verbatim types not allowed in struct def"),
-            };
-        }
-        (deser_body, req_bytes_body)
-    };
-
-    let type_name = &ast.ident;
-    quote! {
         impl ::uniq_id::serde::Deserialize for #type_name {
             fn deserialize(data: &[u8]) -> Self {
                 let mut result: Self = unsafe { ::std::mem::uninitialized() };
