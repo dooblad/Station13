@@ -34,6 +34,7 @@ macro_rules! impl_integral {
                 }
                 result
             }
+
             fn required_bytes() -> usize { $num_bytes }
         }
     }
@@ -92,9 +93,6 @@ macro_rules! impl_array {
 
         impl<T: Deserialize + Default> Deserialize for [T; $len] {
             fn deserialize(data: &[u8]) -> Self {
-                // TODO: Need to be able to initialize an array and iterate over it to fill the
-                // entries.  Or we could push it all to a vec and convert it to an array at the
-                // end.
                 let mut result: [T; $len] = unsafe { ::std::mem::uninitialized() };
                 let mut offs = 0;
                 let stride = T::required_bytes();

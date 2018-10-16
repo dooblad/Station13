@@ -38,41 +38,9 @@ mod tests {
     }
 
     #[test]
-    fn serialize_primitive() {
-        #[derive(UniqId)]
-        #[UniqGroup = "test"]
-        struct TestStruct {
-            x: u32,
-        }
-
-        let test_struct = TestStruct { x: 69 };
-        assert_eq!(test_struct.serialize(), vec![0u8, 0, 0, 69]);
-    }
-
-    #[test]
-    fn serialize_two_same_primitive() {
-        #[derive(UniqId)]
-        #[UniqGroup = "test"]
-        struct TestStruct {
-            x: u32,
-            y: u32,
-        }
-
-        let test_struct = TestStruct { x: 69, y: 420 };
-        assert_eq!(test_struct.serialize(), vec![0u8, 0, 0, 69, 0, 0, 1, 164]);
-    }
-
-    #[test]
-    fn serialize_two_diff_primitive() {
-        #[derive(UniqId)]
-        #[UniqGroup = "test"]
-        struct TestStruct {
-            x: u8,
-            y: u32,
-        }
-
-        let test_struct = TestStruct { x: 69, y: 420 };
-        assert_eq!(test_struct.serialize(), vec![69u8, 0, 0, 1, 164]); // [1, 164] == 420
+    fn serialize_deserialize_uint() {
+        let test_val = 69u32;
+        assert_eq!(u32::deserialize(&test_val.serialize()), test_val);
     }
 
     #[test]
@@ -93,5 +61,43 @@ mod tests {
     fn serialize_deserialize_array() {
         let test_arr = [0u32, 1, 2];
         assert_eq!(<[u32; 3]>::deserialize(&test_arr.serialize()), test_arr);
+    }
+
+    #[test]
+    fn serialize_deserialize_struct_with_primitive() {
+        #[derive(Debug, PartialEq, UniqId)]
+        #[UniqGroup = "test"]
+        struct TestStruct {
+            x: u32,
+        }
+
+        let test_struct = TestStruct { x: 69 };
+        assert_eq!(TestStruct::deserialize(&test_struct.serialize()), test_struct);
+    }
+
+    #[test]
+    fn serialize_deserialize_two_same_primitive() {
+        #[derive(Debug, PartialEq, UniqId)]
+        #[UniqGroup = "test"]
+        struct TestStruct {
+            x: u32,
+            y: u32,
+        }
+
+        let test_struct = TestStruct { x: 69, y: 420 };
+        assert_eq!(TestStruct::deserialize(&test_struct.serialize()), test_struct);
+    }
+
+    #[test]
+    fn serialize_two_diff_primitive() {
+        #[derive(Debug, PartialEq, UniqId)]
+        #[UniqGroup = "test"]
+        struct TestStruct {
+            x: u8,
+            y: u32,
+        }
+
+        let test_struct = TestStruct { x: 69, y: 420 };
+        assert_eq!(TestStruct::deserialize(&test_struct.serialize()), test_struct);
     }
 }
