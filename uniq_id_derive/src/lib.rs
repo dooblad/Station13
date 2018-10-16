@@ -7,14 +7,11 @@ extern crate uniq_id;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::iter;
 use self::proc_macro::TokenStream;
 
 use quote::__rt::Span;
 use syn::Attribute;
 use syn::Data::Struct;
-use syn::Field;
-use syn::Fields::{Named, Unnamed, Unit};
 use syn::Ident;
 use syn::Meta::NameValue;
 use syn::Lit::Str;
@@ -94,7 +91,7 @@ fn impl_serde_traits(ast: &syn::DeriveInput) -> QuoteTokenStream {
     for field in data_struct.fields.iter() {
         let ident = field.ident.clone().unwrap();
         match field.ty {
-            Slice(ref s) => panic!("slice types not allowed in struct def"),
+            Slice(_) => panic!("slice types not allowed in struct def"),
             Array(ref a) => {
                 ser_body.extend(quote! {
                     result.append(&mut self.#ident.serialize());
@@ -110,11 +107,11 @@ fn impl_serde_traits(ast: &syn::DeriveInput) -> QuoteTokenStream {
                     result += <[#elem_ty; #arr_len]>::required_bytes();
                 });
             },
-            Ptr(ref p) => panic!("pointer types not allowed in struct def"),
-            Reference(ref r) => panic!("reference types not allowed in struct def"),
-            BareFn(ref bf) => panic!("bare function types not allowed in struct def"),
-            Never(ref n) => panic!("never types not allowed in struct def"),
-            Tuple(ref t) => panic!("tuple types not allowed in struct def"),
+            Ptr(_) => panic!("pointer types not allowed in struct def"),
+            Reference(_) => panic!("reference types not allowed in struct def"),
+            BareFn(_) => panic!("bare function types not allowed in struct def"),
+            Never(_) => panic!("never types not allowed in struct def"),
+            Tuple(_) => panic!("tuple types not allowed in struct def"),
             Path(ref p) => {
                 ser_body.extend(quote! {
                     result.append(&mut self.#ident.serialize());
@@ -128,13 +125,13 @@ fn impl_serde_traits(ast: &syn::DeriveInput) -> QuoteTokenStream {
                     result += <#p>::required_bytes();
                 });
             },
-            TraitObject(ref to) => panic!("dyn trait objects not allowed in struct def"),
-            ImplTrait(ref it) => panic!("impl trait objects not allowed in struct def"),
-            Paren(ref p) => panic!("parenthesized types not allowed in struct def"),
-            Group(ref g) => println!("type groups not allowed in struct def"),
-            Infer(ref i) => println!("underscore types not allowed in struct def"),
-            Macro(ref m) => println!("macro types not allowed in struct def"),
-            Verbatim(ref v) => println!("verbatim types not allowed in struct def"),
+            TraitObject(_) => panic!("dyn trait objects not allowed in struct def"),
+            ImplTrait(_) => panic!("impl trait objects not allowed in struct def"),
+            Paren(_) => panic!("parenthesized types not allowed in struct def"),
+            Group(_) => println!("type groups not allowed in struct def"),
+            Infer(_) => println!("underscore types not allowed in struct def"),
+            Macro(_) => println!("macro types not allowed in struct def"),
+            Verbatim(_) => println!("verbatim types not allowed in struct def"),
         };
     }
 
