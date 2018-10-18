@@ -1,3 +1,5 @@
+use std::mem;
+
 pub trait Serialize {
     /// Serializes the type into a vector of bytes.
     fn serialize(&self) -> Vec<u8>;
@@ -5,13 +7,12 @@ pub trait Serialize {
 
 pub trait Deserialize {
     // TODO: Make return type `io::Result`.
-    /// Attempts to deserialize the type into a vector of bytes.
-    fn deserialize(data: &[u8]) -> Self;
-    /// Returns the number of bytes needed to deserialize this type (must be deterministic).
-    fn required_bytes() -> usize;
+    /// Attempts to deserialize an instance of `Self` from a vector of bytes.  Returns the number of
+    /// bytes read, along with the constructed `Self` instance.
+    fn deserialize(data: &[u8]) -> (usize, Self);
 }
 
-// Primitive Type Trait Implementations
+// Primitive/Useful Type Trait Implementations
 
 macro_rules! impl_integral {
     ( $ty: ty, $num_bytes: expr ) => {
@@ -26,18 +27,16 @@ macro_rules! impl_integral {
         }
 
         impl Deserialize for $ty {
-            fn deserialize(data: &[u8]) -> Self {
+            fn deserialize(data: &[u8]) -> (usize, Self) {
                 let mut result = 0;
                 let shift_iter = (0..$num_bytes).map(|v| v * 8).rev();
                 for (byte, shift) in data.iter().zip(shift_iter) {
                     result += (*byte as $ty) << shift;
                 }
-                result
+                ($num_bytes, result)
             }
-
-            fn required_bytes() -> usize { $num_bytes }
         }
-    }
+    };
 }
 
 impl_integral!(u8, 1);
@@ -61,14 +60,13 @@ macro_rules! impl_leech {
         }
 
         impl Deserialize for $ty {
-            fn deserialize(data: &[u8]) -> Self {
-                let as_uint = $uint_ident::deserialize(data);
-                unsafe { ::std::mem::transmute(as_uint) }
+            fn deserialize(data: &[u8]) -> (usize, Self) {
+                let (bytes_read, as_uint) = $uint_ident::deserialize(data);
+                let as_ty = unsafe { ::std::mem::transmute(as_uint) };
+                (bytes_read, as_ty)
             }
-
-            fn required_bytes() -> usize { $uint_ident::required_bytes() }
         }
-    }
+    };
 }
 
 impl_leech!(f32, u32, u32);
@@ -79,33 +77,46 @@ impl_leech!(i16, u16, u16);
 impl_leech!(i32, u32, u32);
 impl_leech!(i64, u64, u64);
 
+impl Serialize for usize {
+    fn serialize(&self) -> Vec<u8> {
+        // Hecking WHAT?!  Did you just assume my computer's word size?
+        (*self as u64).serialize()
+    }
+}
+
+impl Deserialize for usize {
+    fn deserialize(data: &[u8]) -> (usize, Self) {
+        // Yes I did.
+        let (bytes_read, int_result) = <u64>::deserialize(data);
+        (bytes_read, int_result as usize)
+    }
+}
+
 macro_rules! impl_array {
     ( $len: expr ) => {
         impl<T: Serialize> Serialize for [T; $len] {
             fn serialize(&self) -> Vec<u8> {
                 let mut result = vec![];
-                for i in 0..self.len() {
-                    result.append(&mut self[i].serialize());
+                for val in self.iter() {
+                    result.append(&mut val.serialize());
                 }
                 result
             }
         }
 
         impl<T: Deserialize + Default> Deserialize for [T; $len] {
-            fn deserialize(data: &[u8]) -> Self {
-                let mut result: [T; $len] = unsafe { ::std::mem::uninitialized() };
-                let mut offs = 0;
-                let stride = T::required_bytes();
+            fn deserialize(data: &[u8]) -> (usize, Self) {
+                let mut result: [T; $len] = unsafe { mem::uninitialized() };
+                let mut bytes_read = 0;
                 for i in 0..$len {
-                    result[i] = T::deserialize(&data[offs..offs+stride]);
-                    offs += stride;
+                    let deser_data = T::deserialize(&data[bytes_read..]);
+                    bytes_read += deser_data.0;
+                    result[i] = deser_data.1;
                 }
-                result
+                (bytes_read, result)
             }
-
-            fn required_bytes() -> usize { T::required_bytes() * $len }
         }
-    }
+    };
 }
 
 // No type-level integers, so we have to choose a set of array lengths that we might want to use
@@ -144,3 +155,45 @@ impl_array!(30);
 impl_array!(31);
 impl_array!(32);
 
+impl Serialize for String {
+    fn serialize(&self) -> Vec<u8> {
+        let mut result = self.len().serialize();
+        result.append(&mut self.bytes().collect());
+        result
+    }
+}
+
+impl Deserialize for String {
+    fn deserialize(data: &[u8]) -> (usize, Self) {
+        let (bytes_read, size) = usize::deserialize(data);
+        let result = std::str::from_utf8(&data[bytes_read..])
+            .expect("failed to deserialize string")
+            .to_string();
+        assert_eq!(result.len(), size);
+        (bytes_read + size, result)
+    }
+}
+
+impl<T: Serialize> Serialize for Vec<T> {
+    fn serialize(&self) -> Vec<u8> {
+        let mut result = self.len().serialize();
+        for val in self.iter() {
+            result.append(&mut val.serialize());
+        }
+        result
+    }
+}
+
+impl<T: Deserialize> Deserialize for Vec<T> {
+    fn deserialize(data: &[u8]) -> (usize, Self) {
+        let (mut bytes_read, size) = usize::deserialize(data);
+        let mut result = Vec::new();
+        for _ in 0..size {
+            let deser_data = T::deserialize(&data[bytes_read..]);
+            bytes_read += deser_data.0;
+            result.push(deser_data.1);
+        }
+        assert_eq!(result.len(), size);
+        (bytes_read, result)
+    }
+}

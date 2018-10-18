@@ -5,8 +5,8 @@ use std::net::{SocketAddr, SocketAddrV4, UdpSocket};
 
 use uniq_id::UniqId;
 
-use super::*;
 use super::packet::*;
+use super::*;
 
 pub const PACKET_BUF_SIZE: usize = 4096;
 

@@ -5,16 +5,16 @@ extern crate syn;
 
 extern crate uniq_id;
 
+use self::proc_macro::TokenStream;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use self::proc_macro::TokenStream;
 
 use quote::__rt::Span;
 use syn::Attribute;
 use syn::Data::Struct;
 use syn::Ident;
-use syn::Meta::NameValue;
 use syn::Lit::Str;
+use syn::Meta::NameValue;
 use syn::Type::*;
 
 use uniq_id::Id;
@@ -36,17 +36,18 @@ pub fn uniq_id_derive(input: TokenStream) -> TokenStream {
     // In order to get all of the necessary imports, without making the user import them, we put
     // all of our code and imports into a const block.  That way, we don't interfere with existing
     // imports in surrounding code.
-    let block_name = Ident::new(&format!("IMPL_SHIT_FOR_{}", &ast.ident.to_string()),
-                                Span::call_site());
-    let result = quote! {
+    let block_name = Ident::new(
+        &format!("IMPL_SHIT_FOR_{}", &ast.ident.to_string()),
+        Span::call_site(),
+    );
+    (quote! {
         // TODO: Can we fukn pls just use `_` here?
         pub const #block_name: () = {
             #uniq_id_impl
             #serde_impls
         };
-    };
-
-    result.into()
+    })
+    .into()
 }
 
 /// Generates an implementation for the `UniqId` trait.
@@ -62,8 +63,10 @@ fn impl_uniq_id_trait(ast: &syn::DeriveInput) -> QuoteTokenStream {
         let comp_id = cnt_map_ref.get(&uniq_group).unwrap().clone();
         // Make sure we're not running out of bits.
         if comp_id == GROUP_LIMIT {
-            panic!("reached limit on number of items in group \"{}\" (limit is {})",
-                   uniq_group, GROUP_LIMIT);
+            panic!(
+                "reached limit on number of items in group \"{}\" (limit is {})",
+                uniq_group, GROUP_LIMIT
+            );
         }
         // Increment counter.
         cnt_map_ref.insert(uniq_group.clone(), comp_id + 1);
@@ -79,60 +82,47 @@ fn impl_uniq_id_trait(ast: &syn::DeriveInput) -> QuoteTokenStream {
 
 /// Generates implementations for the `Serialize` and `Deserialize` traits.
 fn impl_serde_traits(ast: &syn::DeriveInput) -> QuoteTokenStream {
-   let data_struct = match ast.data {
+    let data_struct = match ast.data {
         Struct(ref ds) => ds,
         _ => panic!("macro only runnable on structs"),
     };
 
     // Iterate through struct fields and build method bodies.
-    let mut ser_body = quote! {};
-    let mut deser_body = quote! {};
-    let mut req_bytes_body = quote! {};
+    let mut ser_body = quote!{};
+    let mut deser_body = quote!{};
     for field in data_struct.fields.iter() {
         let ident = field.ident.clone().unwrap();
-        match field.ty {
+        ser_body.extend(quote! {
+            result.append(&mut self.#ident.serialize());
+        });
+        let type_tokens = match field.ty {
             Slice(_) => panic!("slice types not allowed in struct def"),
             Array(ref a) => {
-                ser_body.extend(quote! {
-                    result.append(&mut self.#ident.serialize());
-                });
-                let arr_len = &a.len;
                 let elem_ty = &(*a.elem);
-                deser_body.extend(quote! {
-                    let stride = <[#elem_ty; #arr_len]>::required_bytes();
-                    result.#ident = <[#elem_ty; #arr_len]>::deserialize(&data[offs..offs+stride]);
-                    offs += stride;
-                });
-                req_bytes_body.extend(quote! {
-                    result += <[#elem_ty; #arr_len]>::required_bytes();
-                });
-            },
+                let arr_len = &a.len;
+                quote! { [#elem_ty; #arr_len] }
+            }
             Ptr(_) => panic!("pointer types not allowed in struct def"),
             Reference(_) => panic!("reference types not allowed in struct def"),
             BareFn(_) => panic!("bare function types not allowed in struct def"),
             Never(_) => panic!("never types not allowed in struct def"),
             Tuple(_) => panic!("tuple types not allowed in struct def"),
             Path(ref p) => {
-                ser_body.extend(quote! {
-                    result.append(&mut self.#ident.serialize());
-                });
-                deser_body.extend(quote! {
-                    let stride = <#p>::required_bytes();
-                    result.#ident = <#p>::deserialize(&data[offs..offs+stride]);
-                    offs += stride;
-                });
-                req_bytes_body.extend(quote! {
-                    result += <#p>::required_bytes();
-                });
-            },
+                quote! { #p }
+            }
             TraitObject(_) => panic!("dyn trait objects not allowed in struct def"),
             ImplTrait(_) => panic!("impl trait objects not allowed in struct def"),
             Paren(_) => panic!("parenthesized types not allowed in struct def"),
-            Group(_) => println!("type groups not allowed in struct def"),
-            Infer(_) => println!("underscore types not allowed in struct def"),
-            Macro(_) => println!("macro types not allowed in struct def"),
-            Verbatim(_) => println!("verbatim types not allowed in struct def"),
+            Group(_) => panic!("type groups not allowed in struct def"),
+            Infer(_) => panic!("underscore types not allowed in struct def"),
+            Macro(_) => panic!("macro types not allowed in struct def"),
+            Verbatim(_) => panic!("verbatim types not allowed in struct def"),
         };
+        deser_body.extend(quote! {
+            let deser_data = <#type_tokens>::deserialize(&data[bytes_read..]);
+            bytes_read += deser_data.0;
+            ::std::ptr::write(&mut result.#ident as *mut #type_tokens, deser_data.1);
+        });
     }
 
     // Generate trait implementations.
@@ -147,17 +137,13 @@ fn impl_serde_traits(ast: &syn::DeriveInput) -> QuoteTokenStream {
         }
 
         impl ::uniq_id::serde::Deserialize for #type_name {
-            fn deserialize(data: &[u8]) -> Self {
-                let mut result: Self = unsafe { ::std::mem::uninitialized() };
-                let mut offs: usize = 0;
-                #deser_body
-                result
-            }
-
-            fn required_bytes() -> usize {
-                let mut result = 0;
-                #req_bytes_body
-                result
+            fn deserialize(data: &[u8]) -> (usize, Self) {
+                unsafe {
+                    let mut result: Self = unsafe { ::std::mem::uninitialized() };
+                    let mut bytes_read: usize = 0;
+                    #deser_body
+                    (bytes_read, result)
+                }
             }
         }
     }
@@ -166,7 +152,10 @@ fn impl_serde_traits(ast: &syn::DeriveInput) -> QuoteTokenStream {
 /// Parses the `UniqGroup` attribute.
 fn parse_group_attr(attrs: &Vec<Attribute>) -> String {
     if attrs.len() != 1 {
-        panic!("exactly one attribute (`UniqGroup`) expected (got {})", attrs.len());
+        panic!(
+            "exactly one attribute (`UniqGroup`) expected (got {})",
+            attrs.len()
+        );
     }
 
     match attrs[0].interpret_meta() {
@@ -176,10 +165,10 @@ fn parse_group_attr(attrs: &Vec<Attribute>) -> String {
                 panic!("only \"UniqGroup\" may be set");
             }
             match nv.lit {
-                 Str(lit_str) => lit_str.value(),
+                Str(lit_str) => lit_str.value(),
                 _ => panic!("expected string value"),
             }
-        },
+        }
         _ => panic!("improper attribute format"),
     }
 }

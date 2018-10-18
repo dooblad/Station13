@@ -5,10 +5,10 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 
 use enum_primitive::FromPrimitive;
 
-use uniq_id::serde::{Serialize, Deserialize};
+use uniq_id::serde::{Deserialize, Serialize};
 
-use crate::ecs::Entity;
 use crate::alloc::GenerationalIndex;
+use crate::ecs::Entity;
 
 // TODO: Once const functions are in stable, we should make these a SocketAddrV4.
 pub const BIND_ADDR: [u8; 4] = [127, 0, 0, 1];
@@ -143,4 +143,3 @@ impl Deserialize for Packet {
     }
 }
 */
-
