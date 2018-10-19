@@ -3,7 +3,7 @@ use std::io;
 use std::io::Result;
 use std::net::{SocketAddr, SocketAddrV4, UdpSocket};
 
-use uniq_id::UniqId;
+use serde::{Deserialize, Serialize, UniqId};
 
 use super::packet::*;
 use super::*;
@@ -45,7 +45,7 @@ impl GameSocket {
                 SocketAddr::V4(s) => s,
                 SocketAddr::V6(_) => panic!("IPv6 currently unsupported"),
             };
-            result.push((Packet::deserialize(&self.packet_buf[..amt]), src));
+            //result.push((Packet::deserialize(&self.packet_buf[..amt]), src));
         }
         result
     }

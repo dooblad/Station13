@@ -12,5 +12,5 @@ piston2d-opengl_graphics = "0.53.0"
 pistoncore-glutin_window = "0.47.0"
 rand = "0.5.5"
 
-uniq_id = { path = "../uniq_id" }
-uniq_id_derive = { path = "../uniq_id_derive" }
+serde = { path = "../serde" }
+serde_derive = { path = "../serde_derive" }

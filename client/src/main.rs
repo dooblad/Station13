@@ -5,6 +5,8 @@ extern crate piston;
 
 #[macro_use]
 extern crate common;
+#[macro_use]
+extern crate serde;
 
 pub mod net;
 pub mod render;
@@ -45,9 +47,9 @@ impl Game {
             to_socket_addr(BIND_ADDR, CLIENT_PORT),
             to_socket_addr(BIND_ADDR, SERVER_PORT),
         );
-        client.send(Packet::Hello {
-            name: USERNAME.to_string(),
-        });
+        //client.send(Packet::Hello {
+        //    name: USERNAME.to_string(),
+        //});
 
         Game {
             gl,

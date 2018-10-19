@@ -19,21 +19,22 @@ enum Dir {
     Right,
 }
 
-#[derive(UniqId)]
-#[UniqGroup = "comp"]
-pub struct RandomMobComponent {
-    change_cnt: u32,
-    curr_dir: Dir,
-}
+//#[derive(Serde)]
+//#[IdGroup = "comp"]
+//pub struct RandomMobComponent {
+//    change_cnt: u32,
+//    curr_dir: Dir,
+//}
 
 pub fn new<T>(level: &mut Ecs<T>) -> Entity {
     let result = level.create_entity();
     let mut comp_map = level.entity_map.borrow_mut(&result).unwrap();
     comp_map.set(PositionComponent { x: 0.0, y: 0.0 });
-    comp_map.set(RandomMobComponent {
-        change_cnt: 0,
-        curr_dir: Dir::Up,
-    });
+    // TODO: Get enum serialization support.
+    //comp_map.set(RandomMobComponent {
+    //    change_cnt: 0,
+    //    curr_dir: Dir::Up,
+    //});
     comp_map.set(RenderComponent {
         color: COLOR,
         size: SIZE,

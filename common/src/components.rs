@@ -1,16 +1,16 @@
-extern crate uniq_id;
+extern crate serde;
 
 // TODO: Use custom inner attributes to apply a uniq group to all structs in a module.
 
-#[derive(Clone, UniqId)]
-#[UniqGroup = "comp"]
+#[derive(Clone, Serde)]
+#[IdGroup = "comp"]
 pub struct PositionComponent {
     pub x: f64,
     pub y: f64,
 }
 
-#[derive(UniqId)]
-#[UniqGroup = "comp"]
+#[derive(Serde)]
+#[IdGroup = "comp"]
 pub struct RenderComponent {
     pub color: [f32; 4],
     pub size: f64,

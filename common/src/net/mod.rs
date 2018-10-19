@@ -5,12 +5,12 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 
 use enum_primitive::FromPrimitive;
 
-use uniq_id::serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::alloc::GenerationalIndex;
 use crate::ecs::Entity;
 
-// TODO: Once const functions are in stable, we should make these a SocketAddrV4.
+// TODO: Once const functions are in stable, we should make these SocketAddrV4's.
 pub const BIND_ADDR: [u8; 4] = [127, 0, 0, 1];
 pub const SERVER_PORT: u16 = 7878;
 pub const CLIENT_PORT: u16 = 7777;
@@ -39,30 +39,31 @@ pub enum Packet {
 
 // TODO: Make this an enum of enums (for client-only, server-only, and common packets)?
 // Or maybe they should be entirely disjoint...
+//
 // One thing you'll need to worry about if you separate the definitions of packets across crates is
-// that the UniqId proc macro might reset its state between crates, so the assigned IDs will overlap.
+// that the Serde proc macro might reset its state between crates, so the assigned IDs will overlap.
 mod packet {
     use crate::ecs::Entity;
 
-    #[derive(Debug, UniqId)]
-    #[UniqGroup = "packet"]
-    struct Hello {
+    #[derive(Debug, Serde)]
+    #[IdGroup = "packet"]
+    pub struct Hello {
         name: String,
     }
 
-    #[derive(Debug, UniqId)]
-    #[UniqGroup = "packet"]
-    struct HelloAck;
+    #[derive(Debug, Serde)]
+    #[IdGroup = "packet"]
+    pub struct HelloAck;
 
-    #[derive(Debug, UniqId)]
-    #[UniqGroup = "packet"]
-    struct CreateEntity {
+    #[derive(Debug, Serde)]
+    #[IdGroup = "packet"]
+    pub struct CreateEntity {
         entity: Entity,
     }
 
-    #[derive(Debug, UniqId)]
-    #[UniqGroup = "packet"]
-    struct SetComponent {
+    #[derive(Debug, Serde)]
+    #[IdGroup = "packet"]
+    pub struct SetComponent {
         entity: Entity,
         comp_id: u32,
         data: Vec<u8>,

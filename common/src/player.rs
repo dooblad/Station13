@@ -34,17 +34,17 @@ impl ControlScheme {
     }
 }
 
-#[derive(UniqId)]
-#[UniqGroup = "comp"]
-pub struct PlayerComponent {
-    control_scheme: ControlScheme,
-}
+//#[derive(Serde)]
+//#[IdGroup = "comp"]
+//pub struct PlayerComponent {
+//    control_scheme: ControlScheme,
+//}
 
 pub fn new<T>(control_scheme: ControlScheme, level: &mut Ecs<T>) -> Entity {
     let result = level.create_entity();
     let mut comp_map = level.entity_map.borrow_mut(&result).unwrap();
     comp_map.set(PositionComponent { x: 0.0, y: 0.0 });
-    comp_map.set(PlayerComponent { control_scheme });
+    //comp_map.set(PlayerComponent { control_scheme });
     comp_map.set(RenderComponent {
         color: COLOR,
         size: SIZE,

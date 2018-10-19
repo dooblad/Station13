@@ -3,7 +3,7 @@ extern crate proc_macro;
 extern crate quote;
 extern crate syn;
 
-extern crate uniq_id;
+extern crate serde;
 
 use self::proc_macro::TokenStream;
 use std::cell::RefCell;
@@ -17,19 +17,22 @@ use syn::Lit::Str;
 use syn::Meta::NameValue;
 use syn::Type::*;
 
-use uniq_id::Id;
+use serde::Id;
 
 type QuoteTokenStream = quote::__rt::TokenStream;
 
 const GROUP_LIMIT: Id = std::u8::MAX;
 thread_local!(static ID_COUNTER_MAP: RefCell<HashMap<String, Id>> = RefCell::new(HashMap::new()));
 
-#[proc_macro_derive(UniqId, attributes(UniqGroup))]
-pub fn uniq_id_derive(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(Serde, attributes(IdGroup))]
+pub fn serde_derive(input: TokenStream) -> TokenStream {
     let ast: syn::DeriveInput = syn::parse(input).unwrap();
 
-    // Add `UniqId` implementation.
-    let uniq_id_impl = impl_uniq_id_trait(&ast);
+    // Add `UniqId` implementation (if `IdGroup` is specified).
+    let uniq_id_impl = match parse_group_attr(&ast.attrs) {
+        Some(ug) => impl_uniq_id_trait(&ast, ug),
+        None => quote! {},
+    };
     // Add `Serialize` and `Deserialize` implementation.
     let serde_impls = impl_serde_traits(&ast);
 
@@ -51,9 +54,8 @@ pub fn uniq_id_derive(input: TokenStream) -> TokenStream {
 }
 
 /// Generates an implementation for the `UniqId` trait.
-fn impl_uniq_id_trait(ast: &syn::DeriveInput) -> QuoteTokenStream {
+fn impl_uniq_id_trait(ast: &syn::DeriveInput, uniq_group: String) -> QuoteTokenStream {
     ID_COUNTER_MAP.with(|cnt_map| {
-        let uniq_group = parse_group_attr(&ast.attrs);
         // Use current counter value for this component's ID.
         let mut cnt_map_ref = cnt_map.borrow_mut();
         // Make a counter for this group, if it doesn't already exist.
@@ -73,8 +75,8 @@ fn impl_uniq_id_trait(ast: &syn::DeriveInput) -> QuoteTokenStream {
 
         let type_name = &ast.ident;
         quote! {
-            impl ::uniq_id::UniqId for #type_name {
-                fn id() -> uniq_id::Id { #comp_id }
+            impl ::serde::UniqId for #type_name {
+                fn id() -> serde::Id { #comp_id }
             }
         }
     })
@@ -128,7 +130,7 @@ fn impl_serde_traits(ast: &syn::DeriveInput) -> QuoteTokenStream {
     // Generate trait implementations.
     let type_name = &ast.ident;
     quote! {
-        impl ::uniq_id::serde::Serialize for #type_name {
+        impl ::serde::Serialize for #type_name {
             fn serialize(&self) -> ::std::vec::Vec<u8> {
                 let mut result: Vec<u8> = Vec::new();
                 #ser_body
@@ -136,7 +138,7 @@ fn impl_serde_traits(ast: &syn::DeriveInput) -> QuoteTokenStream {
             }
         }
 
-        impl ::uniq_id::serde::Deserialize for #type_name {
+        impl ::serde::Deserialize for #type_name {
             fn deserialize(data: &[u8]) -> (usize, Self) {
                 unsafe {
                     let mut result: Self = unsafe { ::std::mem::uninitialized() };
@@ -149,20 +151,21 @@ fn impl_serde_traits(ast: &syn::DeriveInput) -> QuoteTokenStream {
     }
 }
 
-/// Parses the `UniqGroup` attribute.
-fn parse_group_attr(attrs: &Vec<Attribute>) -> String {
-    if attrs.len() != 1 {
+/// Parses the `IdGroup` attribute.
+fn parse_group_attr(attrs: &Vec<Attribute>) -> Option<String> {
+    if attrs.len() > 1 {
         panic!(
-            "exactly one attribute (`UniqGroup`) expected (got {})",
+            "at most one attribute (`IdGroup`) allowed (got {})",
             attrs.len()
         );
+    } else if attrs.len() == 0 {
+        return None;
     }
 
-    match attrs[0].interpret_meta() {
+    Some(match attrs[0].interpret_meta() {
         Some(NameValue(nv)) => {
-            // TODO: Assert the name is `UniqGroup`.
-            if nv.ident.to_string() != "UniqGroup" {
-                panic!("only \"UniqGroup\" may be set");
+            if nv.ident.to_string() != "IdGroup" {
+                panic!("only \"IdGroup\" may be set");
             }
             match nv.lit {
                 Str(lit_str) => lit_str.value(),
@@ -170,5 +173,5 @@ fn parse_group_attr(attrs: &Vec<Attribute>) -> String {
             }
         }
         _ => panic!("improper attribute format"),
-    }
+    })
 }

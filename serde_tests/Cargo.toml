@@ -1,0 +1,9 @@
+[package]
+name = "serde_tests"
+version = "0.1.0"
+authors = ["doobs"]
+edition = "2018"
+
+[dependencies]
+serde = { path = "../serde" }
+serde_derive = { path = "../serde_derive" }

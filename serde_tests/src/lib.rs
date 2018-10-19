@@ -1,22 +1,22 @@
-extern crate uniq_id;
+extern crate serde;
 #[macro_use]
-extern crate uniq_id_derive;
+extern crate serde_derive;
 
 #[cfg(test)]
 mod tests {
-    use uniq_id::serde::{Deserialize, Serialize};
-    use uniq_id::UniqId;
+    use serde::{Deserialize, Serialize};
+    use serde::UniqId;
 
     #[test]
     fn increasing_ids_same_group() {
-        #[derive(UniqId)]
-        #[UniqGroup = "test"]
+        #[derive(Serde)]
+        #[IdGroup = "test"]
         struct TSOne;
-        #[derive(UniqId)]
-        #[UniqGroup = "test"]
+        #[derive(Serde)]
+        #[IdGroup = "test"]
         struct TSTwo;
-        #[derive(UniqId)]
-        #[UniqGroup = "test"]
+        #[derive(Serde)]
+        #[IdGroup = "test"]
         struct TSThree;
 
         assert_eq!(TSOne::id(), 0);
@@ -26,11 +26,11 @@ mod tests {
 
     #[test]
     fn same_ids_diff_groups() {
-        #[derive(UniqId)]
-        #[UniqGroup = "test1"]
+        #[derive(Serde)]
+        #[IdGroup = "test1"]
         struct TSOne;
-        #[derive(UniqId)]
-        #[UniqGroup = "test2"]
+        #[derive(Serde)]
+        #[IdGroup = "test2"]
         struct TSTwo;
 
         assert_eq!(TSOne::id(), 0);
@@ -65,8 +65,8 @@ mod tests {
 
     #[test]
     fn serde_struct_with_primitive() {
-        #[derive(Debug, PartialEq, UniqId)]
-        #[UniqGroup = "test"]
+        #[derive(Debug, PartialEq, Serde)]
+        #[IdGroup = "test"]
         struct TestStruct {
             x: u32,
         }
@@ -80,8 +80,8 @@ mod tests {
 
     #[test]
     fn serde_struct_two_same_primitive() {
-        #[derive(Debug, PartialEq, UniqId)]
-        #[UniqGroup = "test"]
+        #[derive(Debug, PartialEq, Serde)]
+        #[IdGroup = "test"]
         struct TestStruct {
             x: u32,
             y: u32,
@@ -96,8 +96,8 @@ mod tests {
 
     #[test]
     fn serde_struct_two_diff_primitive() {
-        #[derive(Debug, PartialEq, UniqId)]
-        #[UniqGroup = "test"]
+        #[derive(Debug, PartialEq, Serde)]
+        #[IdGroup = "test"]
         struct TestStruct {
             x: u8,
             y: u32,
@@ -124,8 +124,8 @@ mod tests {
 
     #[test]
     fn serde_dyn_sized_struct() {
-        #[derive(Debug, PartialEq, UniqId)]
-        #[UniqGroup = "test"]
+        #[derive(Debug, PartialEq, Serde)]
+        #[IdGroup = "test"]
         struct TestStruct {
             x: u8,
             y: Vec<usize>,

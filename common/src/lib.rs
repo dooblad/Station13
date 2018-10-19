@@ -5,9 +5,9 @@ extern crate graphics;
 extern crate opengl_graphics;
 extern crate piston;
 
-extern crate uniq_id;
+extern crate serde;
 #[macro_use]
-extern crate uniq_id_derive;
+extern crate serde_derive;
 
 // Load all macros before other modules, because of how macro scoping works.
 #[macro_use]

@@ -3,7 +3,7 @@ members = [
     "common",
     "client",
     "server",
-    "uniq_id",
-    "uniq_id_derive",
-    "uniq_id_tests",
+    "serde",
+    "serde_derive",
+    "serde_tests",
 ]
