@@ -66,7 +66,6 @@ mod tests {
     #[test]
     fn serde_struct_with_primitive() {
         #[derive(Debug, PartialEq, Serde)]
-        #[IdGroup = "test"]
         struct TestStruct {
             x: u32,
         }
@@ -81,7 +80,6 @@ mod tests {
     #[test]
     fn serde_struct_two_same_primitive() {
         #[derive(Debug, PartialEq, Serde)]
-        #[IdGroup = "test"]
         struct TestStruct {
             x: u32,
             y: u32,
@@ -97,7 +95,6 @@ mod tests {
     #[test]
     fn serde_struct_two_diff_primitive() {
         #[derive(Debug, PartialEq, Serde)]
-        #[IdGroup = "test"]
         struct TestStruct {
             x: u8,
             y: u32,
@@ -125,7 +122,6 @@ mod tests {
     #[test]
     fn serde_dyn_sized_struct() {
         #[derive(Debug, PartialEq, Serde)]
-        #[IdGroup = "test"]
         struct TestStruct {
             x: u8,
             y: Vec<usize>,
@@ -140,6 +136,24 @@ mod tests {
         assert_eq!(
             TestStruct::deserialize(&test_struct.serialize()).1,
             test_struct
+        );
+    }
+
+    #[test]
+    fn serde_enum() {
+        #[derive(Debug, PartialEq, Serde)]
+        enum TestEnum {
+            Up,
+            Down,
+            Left,
+            Right
+        }
+
+        let test_enum = TestEnum::Up;
+
+        assert_eq!(
+            TestEnum::deserialize(&test_enum.serialize()).1,
+            test_enum
         );
     }
 }
