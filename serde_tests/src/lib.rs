@@ -172,4 +172,21 @@ mod tests {
         let test_enum = TestEnum::A(69);
         assert_eq!(TestEnum::deserialize(&test_enum.serialize()).1, test_enum);
     }
+
+    #[test]
+    fn serde_tuple_enum_variant_to_struct() {
+        #[derive(Debug, PartialEq, Serde)]
+        struct TestStruct {
+            x: u32,
+        }
+
+        #[derive(Debug, PartialEq, Serde)]
+        enum TestEnum {
+            A(TestStruct),
+            B(TestStruct),
+        }
+
+        let test_enum = TestEnum::B(TestStruct { x: 1337 });
+        assert_eq!(TestEnum::deserialize(&test_enum.serialize()).1, test_enum);
+    }
 }

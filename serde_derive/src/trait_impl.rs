@@ -155,16 +155,16 @@ fn ser_deconstruct_deser_construct(
         }
         // Tuple Struct/Variant
         Unnamed(_) => {
-            // For tuples, we can use the same `field_list` for deconstructing and for
-            // constructing.
-            let mut field_list: Punctuated<QuoteTokenStream, Comma> = Punctuated::new();
+            let mut pattern_list: Punctuated<QuoteTokenStream, Comma> = Punctuated::new();
+            let mut arg_list: Punctuated<QuoteTokenStream, Comma> = Punctuated::new();
             for (i, _) in fields.iter().enumerate() {
                 let field_ident = i.to_internal_ident();
-                field_list.push(quote!{ #field_ident });
+                pattern_list.push(quote!{ ref #field_ident });
+                arg_list.push(quote!{ #field_ident });
             }
             (
-                quote! { #type_ident(#field_list) },
-                quote! { #type_ident(#field_list) },
+                quote! { #type_ident(#pattern_list) },
+                quote! { #type_ident(#arg_list) },
             )
         }
         // Unit Struct/Variant
