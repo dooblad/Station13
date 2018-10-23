@@ -2,29 +2,29 @@ extern crate rand;
 
 use piston::input::*;
 
-use super::components::{PositionComponent, RenderComponent};
+use crate::ecs::component::{PositionComponent, RenderComponent};
 use super::ecs::{Ecs, Entity, EntityMap};
+use super::ecs::system::System;
 use super::event_handler::EventHandler;
-use super::systems::System;
 
 pub const MOVE_SPEED: f64 = 500.0;
 const CHANGE_INTERVAL: u32 = 60;
 pub const COLOR: [f32; 4] = [0.3, 0.3, 0.7, 1.0]; // Blue
 pub const SIZE: f64 = 50.0;
 
-enum Dir {
+#[derive(Debug, Serde)]
+pub enum Dir {
     Up,
     Down,
     Left,
     Right,
 }
 
-//#[derive(Serde)]
-//#[IdGroup = "comp"]
-//pub struct RandomMobComponent {
-//    change_cnt: u32,
-//    curr_dir: Dir,
-//}
+#[derive(Debug, Serde)]
+pub struct RandomMobComponent {
+    pub change_cnt: u32,
+    pub curr_dir: Dir,
+}
 
 pub fn new<T>(level: &mut Ecs<T>) -> Entity {
     let result = level.create_entity();

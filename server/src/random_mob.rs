@@ -4,9 +4,9 @@ use std::any::TypeId;
 
 use self::rand::{thread_rng, Rng};
 
-use common::components::{PositionComponent, RenderComponent};
+use common::ecs::component::{PositionComponent, RenderComponent};
 use common::ecs::{Ecs, Entity, EntityMap};
-use common::systems::System;
+use common::ecs::system::System;
 
 use super::TickConfig;
 

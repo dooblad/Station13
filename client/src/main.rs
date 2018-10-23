@@ -20,6 +20,7 @@ use piston::window::WindowSettings;
 use common::ecs::Ecs;
 use common::event_handler::EventHandler;
 use common::net::*;
+use common::net::packet::Packet;
 
 use self::net::Client;
 use self::render::Renderer;
@@ -30,8 +31,8 @@ pub const WINDOW_DIMS: [u32; 2] = [800, 600];
 pub const USERNAME: &'static str = "Doobs";
 
 pub struct TickConfig {
-    //event_handler: EventHandler,
-//dt: f64,
+    // event_handler: EventHandler,
+    // dt: f64,
 }
 
 pub struct Game {
@@ -47,9 +48,9 @@ impl Game {
             to_socket_addr(BIND_ADDR, CLIENT_PORT),
             to_socket_addr(BIND_ADDR, SERVER_PORT),
         );
-        //client.send(Packet::Hello {
-        //    name: USERNAME.to_string(),
-        //});
+        client.send(Packet::Hello {
+            name: USERNAME.to_string(),
+        });
 
         Game {
             gl,

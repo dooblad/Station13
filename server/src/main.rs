@@ -6,10 +6,10 @@ pub mod random_mob;
 
 use std::net::SocketAddrV4;
 
-use common::alloc::GenerationalIndex;
-use common::components::PositionComponent;
+use common::ecs::alloc::GenerationalIndex;
 use common::ecs::Ecs;
 use common::net::socket::GameSocket;
+use common::net::packet::Packet;
 use common::net::*;
 
 use self::random_mob::RandomMobUpdateSystem;
@@ -43,32 +43,30 @@ impl Game {
         // TODO: Should the logic tick and the network tick be ran in the same order as on the
         // client?
         for (packet, src) in self.socket.poll().iter() {
-            //match packet {
-            //    Packet::Hello { name } => {
-            //        println!("player \"{}\" said hello", name);
-            //        self.clients.push(src.clone());
-            //        // TODO: Decide client ID.
-            //        self.socket.send_to(Packet::HelloAck {}, &src);
-            //        for entity in self.ecs.entities() {
-            //            // TODO: Send the mob's info to the client.
-            //            self.socket.send_to(Packet::CreateEntity { entity }, &src);
-            //            //let comp_map = self.ecs.get(entity);
-            //            //let mut comp_map = self.ecs.entity_map.borrow_mut(&result).unwrap();
-
-            //            //comp_map.set(PositionComponent { x: 0.0, y: 0.0 });
-            //            //comp_map.set(PlayerComponent { control_scheme });
-            //            //comp_map.set(RenderComponent {
-            //        }
-            //    }
-            //    Packet::HelloAck { .. }
-            //    | Packet::CreateEntity { .. }
-            //    | Packet::SetComponent { .. } => {
-            //        eprintln!("received invalid packet from client: {:?}", packet)
-            //    }
-            //};
+            match packet {
+                Packet::Hello { name } => {
+                    println!("player \"{}\" said hello", name);
+                    self.clients.push(src.clone());
+                    // TODO: Decide client ID.
+                    self.socket.send_to(Packet::HelloAck {}, &src);
+                    for entity in self.ecs.entities() {
+                        // TODO: Send the mob's info to the client.
+                        self.socket.send_to(Packet::CreateEntity { entity: entity.clone() }, &src);
+                        //let comp_map = self.ecs.entity_map.borrow(&entity).unwrap();
+                        //comp_map.get(PositionComponent { x: 0.0, y: 0.0 });
+                        //comp_map.get(PlayerComponent { control_scheme });
+                        //comp_map.get(RenderComponent {
+                    }
+                }
+                Packet::HelloAck { .. }
+                | Packet::CreateEntity { .. }
+                | Packet::SetComponent { .. } => {
+                    eprintln!("received invalid packet from client: {:?}", packet)
+                }
+            };
         }
 
-        // TODO: Add real time deltas.
+        // TODO: Add *real* time deltas.
         let tick_config = TickConfig { dt: 1.0 };
         self.ecs.tick(&tick_config);
     }

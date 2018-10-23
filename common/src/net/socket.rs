@@ -45,24 +45,20 @@ impl GameSocket {
                 SocketAddr::V4(s) => s,
                 SocketAddr::V6(_) => panic!("IPv6 currently unsupported"),
             };
-            //result.push((Packet::deserialize(&self.packet_buf[..amt]), src));
+            result.push((Packet::deserialize(&self.packet_buf[..amt]).1, src));
         }
         result
     }
 
-    pub fn send_to<S: Serialize + Debug>(&mut self, data: S, dest: &SocketAddrV4) {
-        //let bytes = {
-        //    let mut bytes = vec![<S as UniqId>::id()];
-        //    bytes.append(data.serialize());
-        //    bytes
-        //};
-        //if bytes.len() > PACKET_BUF_SIZE {
-        //    panic!(
-        //        "serialized packet is too large ({} > {})",
-        //        bytes.len(),
-        //        PACKET_BUF_SIZE
-        //    );
-        //}
-        //self.socket.send_to(bytes, dest).expect(&format!("failed to send {:?}", data));
+    pub fn send_to(&mut self, packet: Packet, dest: &SocketAddrV4) {
+        let bytes = packet.serialize();
+        if bytes.len() > PACKET_BUF_SIZE {
+            panic!(
+                "serialized packet is too large ({} > {})",
+                bytes.len(),
+                PACKET_BUF_SIZE
+            );
+        }
+        self.socket.send_to(&bytes, dest).expect(&format!("failed to send {:?}", packet));
     }
 }

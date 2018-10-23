@@ -3,12 +3,7 @@ pub mod socket;
 use std;
 use std::net::{Ipv4Addr, SocketAddrV4};
 
-use enum_primitive::FromPrimitive;
-
 use serde::{Deserialize, Serialize};
-
-use crate::alloc::GenerationalIndex;
-use crate::ecs::Entity;
 
 // TODO: Once const functions are in stable, we should make these SocketAddrV4's.
 pub const BIND_ADDR: [u8; 4] = [127, 0, 0, 1];
@@ -21,8 +16,9 @@ pub fn to_socket_addr(addr: [u8; 4], port: u16) -> SocketAddrV4 {
 
 // TODO: Make this an enum of enums (for client-only, server-only, and common packets)?
 // Or maybe they should be entirely disjoint...
-mod packet {
+pub mod packet {
     use crate::ecs::Entity;
+    use crate::ecs::component::Component;
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Serde)]
@@ -36,8 +32,7 @@ mod packet {
         },
         SetComponent {
             entity: Entity,
-            comp_id: u32,
-            data: Vec<u8>,
+            component: Component,
         },
     }
 }

@@ -1,6 +1,6 @@
 use std::cell::{Ref, RefCell, RefMut};
 
-#[derive(Debug, Serde)]
+#[derive(Clone, Debug, Serde)]
 pub struct GenerationalIndex {
     pub idx: usize,
     pub gen: u64,

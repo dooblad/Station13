@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use piston::input::*;
 
-use super::components::{PositionComponent, RenderComponent};
+use crate::ecs::component::{PositionComponent, RenderComponent};
 use super::ecs::{Ecs, Entity};
 use super::event_handler::EventHandler;
 
@@ -34,11 +34,12 @@ impl ControlScheme {
     }
 }
 
-//#[derive(Serde)]
-//#[IdGroup = "comp"]
-//pub struct PlayerComponent {
-//    control_scheme: ControlScheme,
-//}
+// TODO: Don't want to serialize this component, and there're probably some components in
+// general that we don't want to ever serialize.  Gotta figure out how to structure things
+// around that.
+pub struct PlayerComponent {
+    control_scheme: ControlScheme,
+}
 
 pub fn new<T>(control_scheme: ControlScheme, level: &mut Ecs<T>) -> Entity {
     let result = level.create_entity();

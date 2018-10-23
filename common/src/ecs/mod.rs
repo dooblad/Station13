@@ -1,8 +1,12 @@
+pub mod alloc;
+pub mod component;
+pub mod system;
+
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
 
-use super::alloc::{GenerationalIndex, GenerationalIndexAllocator, GenerationalIndexArray};
-use super::systems::System;
+use self::alloc::{GenerationalIndex, GenerationalIndexAllocator, GenerationalIndexArray};
+use self::system::System;
 
 pub const LEVEL_WIDTH: usize = 32;
 pub const LEVEL_HEIGHT: usize = 32;

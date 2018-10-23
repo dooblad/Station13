@@ -2,6 +2,7 @@ use std::fmt::Debug;
 use std::net::SocketAddrV4;
 
 use common::net::socket::GameSocket;
+use common::net::packet::Packet;
 use common::net::*;
 use serde::Serialize;
 
@@ -20,16 +21,16 @@ impl Client {
 
     pub fn tick(&mut self) {
         for (packet, _) in self.socket.poll().iter() {
-            //match packet {
-            //    Packet::Hello { .. } => eprintln!("received Hello from server"),
-            //    Packet::HelloAck { .. } => println!("received {:?}", packet),
-            //    Packet::CreateEntity { .. } => println!("received {:?}", packet),
-            //    Packet::SetComponent { .. } => println!("received {:?}", packet),
-            //};
+            match packet {
+                Packet::Hello { .. } => eprintln!("received Hello from server"),
+                Packet::HelloAck { .. } => println!("received {:?}", packet),
+                Packet::CreateEntity { .. } => println!("received {:?}", packet),
+                Packet::SetComponent { .. } => println!("received {:?}", packet),
+            };
         }
     }
 
-    pub fn send<S: Serialize + Debug>(&mut self, data: S) {
-        //self.socket.send_to(data, &self.server_addr);
+    pub fn send(&mut self, packet: Packet) {
+        self.socket.send_to(packet, &self.server_addr);
     }
 }

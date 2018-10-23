@@ -4,7 +4,7 @@ use graphics::Context;
 use opengl_graphics::GlGraphics;
 use piston::input::RenderArgs;
 
-use common::components::{PositionComponent, RenderComponent};
+use common::ecs::component::{PositionComponent, RenderComponent};
 use common::ecs::{Ecs, Entity, EntityMap};
 
 pub struct Renderer;
@@ -51,7 +51,7 @@ impl Renderer {
         use graphics::*;
 
         let comp_map = entity_map.borrow(entity).unwrap();
-        let pos_comp = comp_map.get::<PositionComponent>();
+        let pos_comp = comp_map.borrow::<PositionComponent>();
         let render_comp = comp_map.borrow::<RenderComponent>();
 
         let (x, y) = ((args.width / 2) as f64, (args.height / 2) as f64);
