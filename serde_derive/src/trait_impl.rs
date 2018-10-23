@@ -46,8 +46,8 @@ fn impl_serde_traits_enum(ast: &syn::DeriveInput, data_enum: &DataEnum) -> Quote
             quote! { #enum_ident::#variant_ident },
         );
 
-        let mut ser_arm_body = impl_ser_body(&variant.fields);
-        let mut deser_arm_body = impl_deser_body(&variant.fields);
+        let ser_arm_body = impl_ser_body(&variant.fields);
+        let deser_arm_body = impl_deser_body(&variant.fields);
         ser_body.extend(quote! {
             #ser_deconstruct => {
                 result_.append(&mut (#variant_num as #tag_type).serialize());
@@ -90,8 +90,8 @@ fn impl_serde_traits_enum(ast: &syn::DeriveInput, data_enum: &DataEnum) -> Quote
 }
 
 fn impl_serde_traits_struct(ast: &syn::DeriveInput, data_struct: &DataStruct) -> QuoteTokenStream {
-    let mut ser_body = impl_ser_body(&data_struct.fields);
-    let mut deser_body = impl_deser_body(&data_struct.fields);
+    let ser_body = impl_ser_body(&data_struct.fields);
+    let deser_body = impl_deser_body(&data_struct.fields);
 
     let struct_ident = &ast.ident;
     let (ser_deconstruct, deser_construct) = {

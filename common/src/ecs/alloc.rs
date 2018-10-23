@@ -27,7 +27,7 @@ impl GenerationalIndexAllocator {
     pub fn allocate(&mut self) -> GenerationalIndex {
         if let Some(e_idx) = self.free.pop() {
             // Use item from the free list.
-            let mut entry = &mut self.entries[e_idx];
+            let entry = &mut self.entries[e_idx];
             entry.is_live = true;
             entry.gen += 1;
             let gen_idx = GenerationalIndex {

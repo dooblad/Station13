@@ -1,6 +1,5 @@
 use std::any::TypeId;
 
-use crate::event_handler::EventHandler;
 use super::{Entity, EntityMap};
 use super::component::{PositionComponent, RenderComponent};
 

@@ -1,10 +1,7 @@
-use std::fmt::Debug;
 use std::net::SocketAddrV4;
 
 use common::net::socket::GameSocket;
 use common::net::packet::Packet;
-use common::net::*;
-use serde::Serialize;
 
 pub struct Client {
     pub socket: GameSocket,

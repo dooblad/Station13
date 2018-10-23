@@ -5,8 +5,6 @@ extern crate piston;
 
 #[macro_use]
 extern crate common;
-#[macro_use]
-extern crate serde;
 
 pub mod net;
 pub mod render;
