@@ -31,7 +31,7 @@ pub const USERNAME: &'static str = "Doobs";
 
 pub struct TickConfig {
     //event_handler: EventHandler,
-    //dt: f64,
+//dt: f64,
 }
 
 pub struct Game {

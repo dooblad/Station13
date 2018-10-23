@@ -5,37 +5,6 @@ extern crate serde_derive;
 #[cfg(test)]
 mod tests {
     use serde::{Deserialize, Serialize};
-    use serde::UniqId;
-
-    #[test]
-    fn increasing_ids_same_group() {
-        #[derive(Serde)]
-        #[IdGroup = "test"]
-        struct TSOne;
-        #[derive(Serde)]
-        #[IdGroup = "test"]
-        struct TSTwo;
-        #[derive(Serde)]
-        #[IdGroup = "test"]
-        struct TSThree;
-
-        assert_eq!(TSOne::id(), 0);
-        assert_eq!(TSTwo::id(), 1);
-        assert_eq!(TSThree::id(), 2);
-    }
-
-    #[test]
-    fn same_ids_diff_groups() {
-        #[derive(Serde)]
-        #[IdGroup = "test1"]
-        struct TSOne;
-        #[derive(Serde)]
-        #[IdGroup = "test2"]
-        struct TSTwo;
-
-        assert_eq!(TSOne::id(), 0);
-        assert_eq!(TSTwo::id(), 0);
-    }
 
     #[test]
     fn serde_uint() {
@@ -61,6 +30,18 @@ mod tests {
     fn serde_array() {
         let test_arr = [0u32, 1, 2];
         assert_eq!(<[u32; 3]>::deserialize(&test_arr.serialize()).1, test_arr);
+    }
+
+    #[test]
+    fn serde_empty_struct() {
+        #[derive(Debug, PartialEq, Serde)]
+        struct TestStruct {}
+
+        let test_struct = TestStruct {};
+        assert_eq!(
+            TestStruct::deserialize(&test_struct.serialize()).1,
+            test_struct
+        );
     }
 
     #[test]
@@ -140,20 +121,55 @@ mod tests {
     }
 
     #[test]
-    fn serde_enum() {
+    fn serde_tuple_struct() {
+        #[derive(Debug, PartialEq, Serde)]
+        struct TestStruct(u32, String);
+
+        let test_struct = TestStruct(0, String::from("ayy"));
+        assert_eq!(
+            TestStruct::deserialize(&test_struct.serialize()).1,
+            test_struct
+        );
+    }
+
+    #[test]
+    fn serde_enum_no_fields() {
         #[derive(Debug, PartialEq, Serde)]
         enum TestEnum {
             Up,
             Down,
             Left,
-            Right
+            Right,
         }
 
         let test_enum = TestEnum::Up;
 
-        assert_eq!(
-            TestEnum::deserialize(&test_enum.serialize()).1,
-            test_enum
-        );
+        assert_eq!(TestEnum::deserialize(&test_enum.serialize()).1, test_enum);
+    }
+
+    #[test]
+    fn serde_enum_with_fields() {
+        #[derive(Debug, PartialEq, Serde)]
+        enum TestEnum {
+            A { x: u32, y: u32 },
+            B { s: String },
+        }
+
+        let test_enum = TestEnum::B {
+            s: String::from("ayy lmao"),
+        };
+
+        assert_eq!(TestEnum::deserialize(&test_enum.serialize()).1, test_enum);
+    }
+
+    #[test]
+    fn serde_tuple_enum_variant() {
+        #[derive(Debug, PartialEq, Serde)]
+        enum TestEnum {
+            A(u32),
+        }
+
+        let test_enum = TestEnum::A(69);
+        assert_eq!(TestEnum::deserialize(&test_enum.serialize()).1, test_enum);
     }
 }

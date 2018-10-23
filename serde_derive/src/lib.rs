@@ -1,4 +1,5 @@
 extern crate proc_macro;
+extern crate proc_macro2;
 #[macro_use]
 extern crate quote;
 extern crate syn;
@@ -8,22 +9,16 @@ extern crate serde;
 mod trait_impl;
 
 use self::proc_macro::TokenStream;
+use proc_macro2::{Ident, Span};
 
-use quote::__rt::Span;
 use syn::Attribute;
-use syn::Ident;
 use syn::Lit::Str;
 use syn::Meta::NameValue;
 
 #[proc_macro_derive(Serde, attributes(IdGroup))]
 pub fn serde_derive(input: TokenStream) -> TokenStream {
-    let ast: syn::DeriveInput = syn::parse(input).unwrap();
+    let ast = syn::parse(input).unwrap();
 
-    // Add `UniqId` implementation (if `IdGroup` is specified).
-    let uniq_id_impl = match parse_group_attr(&ast.attrs) {
-        Some(ug) => trait_impl::impl_uniq_id_trait(&ast, ug),
-        None => quote! {},
-    };
     // Add `Serialize` and `Deserialize` implementation.
     let serde_impls = trait_impl::impl_serde_traits(&ast);
 
@@ -37,39 +32,14 @@ pub fn serde_derive(input: TokenStream) -> TokenStream {
     let result = quote! {
         // TODO: Can we fukn pls just use `_` here?
         pub const #block_name: () = {
-            #uniq_id_impl
             #serde_impls
         };
     };
 
-    // TODO: Get some logging infrastructure.
-    //debug!("Output AST:");
-    //debug!("{}", result);
+    // TODO: Get some logging infrastructure, so we can use debug prints.
+    //println!("Output AST:");
+    //println!("{}", result);
+    //println!();
 
     result.into()
-}
-
-/// Parses the `IdGroup` attribute.
-fn parse_group_attr(attrs: &Vec<Attribute>) -> Option<String> {
-    if attrs.len() > 1 {
-        panic!(
-            "at most one attribute (`IdGroup`) allowed (got {})",
-            attrs.len()
-        );
-    } else if attrs.len() == 0 {
-        return None;
-    }
-
-    Some(match attrs[0].interpret_meta() {
-        Some(NameValue(nv)) => {
-            if nv.ident.to_string() != "IdGroup" {
-                panic!("only \"IdGroup\" may be set");
-            }
-            match nv.lit {
-                Str(lit_str) => lit_str.value(),
-                _ => panic!("expected string value"),
-            }
-        }
-        _ => panic!("improper attribute format"),
-    })
 }

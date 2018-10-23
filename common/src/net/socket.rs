@@ -3,7 +3,7 @@ use std::io;
 use std::io::Result;
 use std::net::{SocketAddr, SocketAddrV4, UdpSocket};
 
-use serde::{Deserialize, Serialize, UniqId};
+use serde::{Deserialize, Serialize};
 
 use super::packet::*;
 use super::*;
@@ -50,7 +50,7 @@ impl GameSocket {
         result
     }
 
-    pub fn send_to<S: Serialize + UniqId + Debug>(&mut self, data: S, dest: &SocketAddrV4) {
+    pub fn send_to<S: Serialize + Debug>(&mut self, data: S, dest: &SocketAddrV4) {
         //let bytes = {
         //    let mut bytes = vec![<S as UniqId>::id()];
         //    bytes.append(data.serialize());
