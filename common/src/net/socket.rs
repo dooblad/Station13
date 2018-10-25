@@ -56,6 +56,8 @@ impl GameSocket {
                 PACKET_BUF_SIZE
             );
         }
-        self.socket.send_to(&bytes, dest).expect(&format!("failed to send {:?}", packet));
+        self.socket
+            .send_to(&bytes, dest)
+            .expect(&format!("failed to send {:?}", packet));
     }
 }

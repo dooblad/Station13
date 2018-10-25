@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use piston::input::*;
 
-use crate::ecs::component::{PositionComponent, RenderComponent};
 use super::ecs::{Ecs, Entity};
 use super::event_handler::EventHandler;
+use crate::ecs::component::{PositionComponent, RenderComponent};
 
 pub const MOVE_SPEED: f64 = 500.0;
 pub const COLOR: [f32; 4] = [0.7, 0.3, 0.3, 1.0]; // Red

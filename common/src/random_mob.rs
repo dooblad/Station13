@@ -1,8 +1,7 @@
 extern crate rand;
 
-
-use crate::ecs::component::{PositionComponent, RenderComponent};
 use super::ecs::{Ecs, Entity};
+use crate::ecs::component::{PositionComponent, RenderComponent};
 
 pub const MOVE_SPEED: f64 = 500.0;
 const CHANGE_INTERVAL: u32 = 60;

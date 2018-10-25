@@ -11,7 +11,6 @@ mod trait_impl;
 use self::proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
 
-
 #[proc_macro_derive(Serde, attributes(IdGroup))]
 pub fn serde_derive(input: TokenStream) -> TokenStream {
     let ast = syn::parse(input).unwrap();

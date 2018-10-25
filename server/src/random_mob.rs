@@ -5,8 +5,8 @@ use std::any::TypeId;
 use self::rand::{thread_rng, Rng};
 
 use common::ecs::component::{PositionComponent, RenderComponent};
-use common::ecs::{Ecs, Entity, EntityMap};
 use common::ecs::system::System;
+use common::ecs::{Ecs, Entity, EntityMap};
 
 use super::TickConfig;
 

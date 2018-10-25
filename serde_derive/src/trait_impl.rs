@@ -1,4 +1,3 @@
-
 use crate::proc_macro2::{Ident, Span};
 
 use syn::punctuated::Punctuated;

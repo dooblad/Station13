@@ -1,7 +1,7 @@
 use std::net::SocketAddrV4;
 
-use common::net::socket::GameSocket;
 use common::net::packet::Packet;
+use common::net::socket::GameSocket;
 
 pub struct Client {
     pub socket: GameSocket,

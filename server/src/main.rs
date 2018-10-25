@@ -7,8 +7,8 @@ pub mod random_mob;
 use std::net::SocketAddrV4;
 
 use common::ecs::Ecs;
-use common::net::socket::GameSocket;
 use common::net::packet::Packet;
+use common::net::socket::GameSocket;
 use common::net::*;
 
 use self::random_mob::RandomMobUpdateSystem;
@@ -50,11 +50,15 @@ impl Game {
                     self.socket.send_to(Packet::HelloAck {}, &src);
                     for entity in self.ecs.entities() {
                         // TODO: Send the mob's info to the client.
-                        self.socket.send_to(Packet::CreateEntity { entity: entity.clone() }, &src);
+                        self.socket.send_to(
+                            Packet::CreateEntity {
+                                entity: entity.clone(),
+                            },
+                            &src,
+                        );
                         //let comp_map = self.ecs.entity_map.borrow(&entity).unwrap();
-                        //comp_map.get(PositionComponent { x: 0.0, y: 0.0 });
-                        //comp_map.get(PlayerComponent { control_scheme });
-                        //comp_map.get(RenderComponent {
+                        //comp_map.get::<PositionComponent>();
+                        //comp_map.get::<RenderComponent>();
                     }
                 }
                 Packet::HelloAck { .. }

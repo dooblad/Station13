@@ -17,8 +17,8 @@ use piston::window::WindowSettings;
 
 use common::ecs::Ecs;
 use common::event_handler::EventHandler;
-use common::net::*;
 use common::net::packet::Packet;
+use common::net::*;
 
 use self::net::Client;
 use self::render::Renderer;
@@ -30,7 +30,7 @@ pub const USERNAME: &'static str = "Doobs";
 
 pub struct TickConfig {
     // event_handler: EventHandler,
-    // dt: f64,
+// dt: f64,
 }
 
 pub struct Game {
