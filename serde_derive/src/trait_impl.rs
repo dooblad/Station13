@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-use std::collections::HashMap;
 
 use crate::proc_macro2::{Ident, Span};
 
@@ -8,7 +6,7 @@ use syn::token::Comma;
 use syn::Data::{Enum, Struct};
 use syn::Fields::*;
 use syn::Type::*;
-use syn::{DataEnum, DataStruct, Field, Fields};
+use syn::{DataEnum, DataStruct, Fields};
 
 type QuoteTokenStream = quote::__rt::TokenStream;
 

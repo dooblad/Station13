@@ -6,7 +6,6 @@ pub mod random_mob;
 
 use std::net::SocketAddrV4;
 
-use common::ecs::alloc::GenerationalIndex;
 use common::ecs::Ecs;
 use common::net::socket::GameSocket;
 use common::net::packet::Packet;

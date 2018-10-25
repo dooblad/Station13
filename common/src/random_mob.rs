@@ -1,11 +1,8 @@
 extern crate rand;
 
-use piston::input::*;
 
 use crate::ecs::component::{PositionComponent, RenderComponent};
-use super::ecs::{Ecs, Entity, EntityMap};
-use super::ecs::system::System;
-use super::event_handler::EventHandler;
+use super::ecs::{Ecs, Entity};
 
 pub const MOVE_SPEED: f64 = 500.0;
 const CHANGE_INTERVAL: u32 = 60;

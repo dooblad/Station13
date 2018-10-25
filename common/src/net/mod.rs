@@ -1,9 +1,7 @@
 pub mod socket;
 
-use std;
 use std::net::{Ipv4Addr, SocketAddrV4};
 
-use serde::{Deserialize, Serialize};
 
 // TODO: Once const functions are in stable, we should make these SocketAddrV4's.
 pub const BIND_ADDR: [u8; 4] = [127, 0, 0, 1];
@@ -19,7 +17,6 @@ pub fn to_socket_addr(addr: [u8; 4], port: u16) -> SocketAddrV4 {
 pub mod packet {
     use crate::ecs::Entity;
     use crate::ecs::component::Component;
-    use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Serde)]
     pub enum Packet {

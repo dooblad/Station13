@@ -1,12 +1,9 @@
-use std::fmt::Debug;
 use std::io;
-use std::io::Result;
 use std::net::{SocketAddr, SocketAddrV4, UdpSocket};
 
 use serde::{Deserialize, Serialize};
 
 use super::packet::*;
-use super::*;
 
 pub const PACKET_BUF_SIZE: usize = 4096;
 

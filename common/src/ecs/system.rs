@@ -1,7 +1,6 @@
 use std::any::TypeId;
 
 use super::{Entity, EntityMap};
-use super::component::{PositionComponent, RenderComponent};
 
 pub trait System<T> {
     fn comp_constraints(&self) -> Vec<TypeId>;
