@@ -7,7 +7,8 @@ use syn::Fields::*;
 use syn::Type::*;
 use syn::{DataEnum, DataStruct, Fields};
 
-type QuoteTokenStream = quote::__rt::TokenStream;
+use crate::QuoteTokenStream;
+use crate::enum_impl::calc_enum_tag_type;
 
 /// Generates implementations for the `Serialize` and `Deserialize` traits.
 ///
@@ -17,7 +18,7 @@ pub fn impl_serde_traits(ast: &syn::DeriveInput) -> QuoteTokenStream {
     match ast.data {
         Enum(ref de) => impl_serde_traits_enum(ast, de),
         Struct(ref ds) => impl_serde_traits_struct(ast, ds),
-        _ => panic!("macro only runnable on enums and structs"),
+        _ => unreachable!(),
     }
 }
 
@@ -25,18 +26,11 @@ fn impl_serde_traits_enum(ast: &syn::DeriveInput, data_enum: &DataEnum) -> Quote
     // Find a large enough type to identify all variants in this enum.
     let num_variants = data_enum.variants.len();
     let enum_ident = &ast.ident;
-    let tag_type = match calc_enum_discriminant_type(num_variants) {
-        Some(tt) => tt,
-        None => panic!("empty enums not supported"),
-    };
 
     // Iterate through enum fields and build method bodies.
     let mut ser_body = quote!{};
     let mut deser_body = quote!{};
     for (variant_num, variant) in (0..num_variants).zip(data_enum.variants.iter()) {
-        if variant.discriminant.is_some() {
-            panic!("enum discriminants not supported");
-        }
         let variant_ident = &variant.ident;
         let (ser_deconstruct, deser_construct) = ser_deconstruct_deser_construct(
             &variant.fields,
@@ -47,7 +41,7 @@ fn impl_serde_traits_enum(ast: &syn::DeriveInput, data_enum: &DataEnum) -> Quote
         let deser_arm_body = impl_deser_body(&variant.fields);
         ser_body.extend(quote! {
             #ser_deconstruct => {
-                result_.append(&mut (#variant_num as #tag_type).serialize());
+                result_.append(&mut self.enum_tag().serialize());
                 #ser_arm_body
             },
         });
@@ -60,9 +54,9 @@ fn impl_serde_traits_enum(ast: &syn::DeriveInput, data_enum: &DataEnum) -> Quote
     }
 
     // Generate trait implementations.
-    let type_name = &ast.ident;
+    let tag_type = calc_enum_tag_type(num_variants).unwrap();
     quote! {
-        impl ::serde::Serialize for #type_name {
+        impl ::serde::Serialize for #enum_ident {
             fn serialize(&self) -> ::std::vec::Vec<u8> {
                 let mut result_: Vec<u8> = Vec::new();
                 match *self {
@@ -72,7 +66,7 @@ fn impl_serde_traits_enum(ast: &syn::DeriveInput, data_enum: &DataEnum) -> Quote
             }
         }
 
-        impl ::serde::Deserialize for #type_name {
+        impl ::serde::Deserialize for #enum_ident {
             fn deserialize(data: &[u8]) -> (usize, Self) {
                 // Anything that shadows `data` could cause issues.
                 let data_ = data;
@@ -170,71 +164,31 @@ fn ser_deconstruct_deser_construct(
 }
 
 fn impl_ser_body(fields: &Fields) -> QuoteTokenStream {
-    match fields {
-        Named(_) => impl_ser_body_named(fields),
-        Unnamed(_) => impl_ser_body_unnamed(fields),
-        Unit => quote!{},
-    }
-}
-
-fn impl_ser_body_named(fields: &Fields) -> QuoteTokenStream {
     let mut result = quote!{};
-    for field in fields.iter() {
-        let ident = field.ident.clone().unwrap();
+    for (i, field) in fields.iter().enumerate() {
+        let binding_ident = field.ident.clone().unwrap_or(i.to_internal_ident());
         result.extend(quote! {
-            result_.append(&mut #ident.serialize());
-        });
-    }
-    result
-}
-
-fn impl_ser_body_unnamed(fields: &Fields) -> QuoteTokenStream {
-    let mut result = quote!{};
-    for (i, _) in fields.iter().enumerate() {
-        let field_binding_ident = i.to_internal_ident();
-        result.extend(quote! {
-            result_.append(&mut #field_binding_ident.serialize());
+            result_.append(&mut #binding_ident.serialize());
         });
     }
     result
 }
 
 fn impl_deser_body(fields: &Fields) -> QuoteTokenStream {
-    match fields {
-        Named(_) => impl_deser_body_named(fields),
-        Unnamed(_) => impl_deser_body_unnamed(fields),
-        Unit => quote!{},
-    }
-}
-
-fn impl_deser_body_named(fields: &Fields) -> QuoteTokenStream {
     let mut result = quote!{};
-    for field in fields.iter() {
-        let field_ident = field.ident.clone().unwrap();
+    for (i, field) in fields.iter().enumerate() {
         let type_tokens = match field.ty {
-            Slice(_) => panic!("slice types not allowed in struct def"),
             Array(ref a) => {
                 let elem_ty = &(*a.elem);
                 let arr_len = &a.len;
                 quote! { [#elem_ty; #arr_len] }
             }
-            Ptr(_) => panic!("pointer types not allowed in struct def"),
-            Reference(_) => panic!("reference types not allowed in struct def"),
-            BareFn(_) => panic!("bare function types not allowed in struct def"),
-            Never(_) => panic!("never types not allowed in struct def"),
-            Tuple(_) => panic!("tuple types not allowed in struct def"),
             Path(ref p) => {
                 quote! { #p }
             }
-            TraitObject(_) => panic!("dyn trait objects not allowed in struct def"),
-            ImplTrait(_) => panic!("impl trait objects not allowed in struct def"),
-            Paren(_) => panic!("parenthesized types not allowed in struct def"),
-            Group(_) => panic!("type groups not allowed in struct def"),
-            Infer(_) => panic!("underscore types not allowed in struct def"),
-            Macro(_) => panic!("macro types not allowed in struct def"),
-            Verbatim(_) => panic!("verbatim types not allowed in struct def"),
+            _ => unreachable!(),
         };
-        let binding_ident = field_ident.to_internal_ident();
+        let binding_ident = (i, field.ident.clone()).to_internal_ident();
         result.extend(quote! {
             let deser_data_ = <#type_tokens>::deserialize(&data_[bytes_read_..]);
             bytes_read_ += deser_data_.0;
@@ -244,45 +198,12 @@ fn impl_deser_body_named(fields: &Fields) -> QuoteTokenStream {
     result
 }
 
-fn impl_deser_body_unnamed(fields: &Fields) -> QuoteTokenStream {
-    let mut result = quote!{};
-    for (i, field) in fields.iter().enumerate() {
-        let type_tokens = match field.ty {
-            Slice(_) => panic!("slice types not allowed in struct def"),
-            Array(ref a) => {
-                let elem_ty = &(*a.elem);
-                let arr_len = &a.len;
-                quote! { [#elem_ty; #arr_len] }
-            }
-            Ptr(_) => panic!("pointer types not allowed in struct def"),
-            Reference(_) => panic!("reference types not allowed in struct def"),
-            BareFn(_) => panic!("bare function types not allowed in struct def"),
-            Never(_) => panic!("never types not allowed in struct def"),
-            Tuple(_) => panic!("tuple types not allowed in struct def"),
-            Path(ref p) => {
-                quote! { #p }
-            }
-            TraitObject(_) => panic!("dyn trait objects not allowed in struct def"),
-            ImplTrait(_) => panic!("impl trait objects not allowed in struct def"),
-            Paren(_) => panic!("parenthesized types not allowed in struct def"),
-            Group(_) => panic!("type groups not allowed in struct def"),
-            Infer(_) => panic!("underscore types not allowed in struct def"),
-            Macro(_) => panic!("macro types not allowed in struct def"),
-            Verbatim(_) => panic!("verbatim types not allowed in struct def"),
-        };
-        let internal_ident = i.to_internal_ident();
-        result.extend(quote! {
-            let deser_data_ = <#type_tokens>::deserialize(&data_[bytes_read_..]);
-            bytes_read_ += deser_data_.0;
-            let #internal_ident = deser_data_.1;
-        });
-    }
-    result
-}
-
 trait ToInternalIdent {
-    // Adds an underscore suffix and, if the base type "starts with" a number, we also need a prefix
-    // underscore, because an identifier can't start with a number.
+    /// Adds an underscore suffix and, if the base type "starts with" a number, we also need a prefix
+    /// underscore, because an identifier can't start with a number.
+    ///
+    /// Just for the record, I fucking hate this, but as long as our meta-variables are in the same
+    /// environment as base-level variables, idk how else to go about this.
     fn to_internal_ident(&self) -> Ident;
 }
 
@@ -304,26 +225,15 @@ impl ToInternalIdent for Ident {
     }
 }
 
-/// Returns the number of bytes required to tag a union with `num_variants` variants.  If the enum
-/// has no variants, returns `None`.
-fn calc_enum_discriminant_type(num_variants: usize) -> Option<QuoteTokenStream> {
-    match num_bytes_required(num_variants as u64) {
-        0 => None,
-        1 => Some(quote!{ u8 }),
-        2 => Some(quote!{ u16 }),
-        3 | 4 => Some(quote!{ u32 }),
-        5 | 6 | 7 | 8 => Some(quote!{ u64 }),
-        _ => panic!("impossibru!"),
-    }
-}
-
-fn num_bytes_required(val: u64) -> usize {
-    for shift in (0..64).rev() {
-        if (val >> shift) & 1 == 1 {
-            return ((shift / 8) + 1) as usize;
+// For abstracting over whether we're generating bindings for a named-field struct or an
+// unnamed-field (tuple) struct.
+impl ToInternalIdent for (usize, Option<Ident>) {
+    fn to_internal_ident(&self) -> Ident {
+        match self.1 {
+            Some(ref id) => id.to_internal_ident(),
+            None => self.0.to_internal_ident(),
         }
     }
-    0
 }
 
 #[cfg(test)]

@@ -4,6 +4,7 @@ extern crate serde_derive;
 #[cfg(test)]
 mod tests {
     use serde::{Deserialize, Serialize};
+    use serde_derive::Serde;
 
     #[test]
     fn serde_uint() {
@@ -187,5 +188,29 @@ mod tests {
 
         let test_enum = TestEnum::B(TestStruct { x: 1337 });
         assert_eq!(TestEnum::deserialize(&test_enum.serialize()).1, test_enum);
+    }
+
+    #[test]
+    fn enum_tag() {
+        #[derive(Debug, PartialEq, Serde)]
+        enum TestEnum {
+            A(u32),
+            B(u32),
+        }
+
+        assert_eq!(TestEnum::A(66).enum_tag(), 0);
+        assert_eq!(TestEnum::B(66).enum_tag(), 1);
+    }
+
+    #[test]
+    fn num_variants() {
+        #[derive(Debug, PartialEq, Serde)]
+        enum TestEnum {
+            A(u32),
+            B(u32),
+            C(u32),
+        }
+
+        assert_eq!(TestEnum::num_variants(), 3);
     }
 }

@@ -2,21 +2,39 @@ extern crate proc_macro;
 extern crate proc_macro2;
 #[macro_use]
 extern crate quote;
+extern crate slog;
+extern crate slog_async;
+extern crate slog_term;
 extern crate syn;
 
 extern crate serde;
 
-mod trait_impl;
+mod enum_impl;
+mod serde_impl;
+mod validate;
 
 use self::proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
+use slog::*;
+use syn::Data::{Enum, Struct};
+
+use self::validate::validate;
+
+type QuoteTokenStream = quote::__rt::TokenStream;
 
 #[proc_macro_derive(Serde, attributes(IdGroup))]
 pub fn serde_derive(input: TokenStream) -> TokenStream {
-    let ast = syn::parse(input).unwrap();
+    let ast: syn::DeriveInput = syn::parse(input).unwrap();
+    validate(&ast);
 
+    // Add utility methods, if we're being run on an enum.
+    let enum_tag_impl_tokens = if let syn::Data::Enum(ref de) = ast.data {
+        enum_impl::impl_enum_methods(&ast, de)
+    } else {
+        quote! {}
+    };
     // Add `Serialize` and `Deserialize` implementation.
-    let serde_impls = trait_impl::impl_serde_traits(&ast);
+    let serde_impl_tokens = serde_impl::impl_serde_traits(&ast);
 
     // In order to get all of the necessary imports, without making the user import them, we put
     // all of our code and imports into a const block.  That way, we don't interfere with existing
@@ -28,14 +46,18 @@ pub fn serde_derive(input: TokenStream) -> TokenStream {
     let result = quote! {
         // TODO: Can we fukn pls just use `_` here?
         pub const #block_name: () = {
-            #serde_impls
+            #enum_tag_impl_tokens
+            #serde_impl_tokens
         };
     };
 
-    // TODO: Get some logging infrastructure, so we can use debug prints.
-    //println!("Output AST:");
-    //println!("{}", result);
-    //println!();
+    let decorator = slog_term::TermDecorator::new().force_color().build();
+    let drain = slog_term::CompactFormat::new(decorator).build().fuse();
+    let drain = slog_async::Async::new(drain).build().fuse();
+
+    let logger = slog::Logger::root(drain, o!());
+
+    debug!(logger, "Output AST:\n{}\n", result);
 
     result.into()
 }
